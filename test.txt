@@ -1,0 +1,28 @@
+% http://stackoverflow.com/questions/14519387/implement-low-pass-filter-in-matlab
+% http://www.mathworks.com/matlabcentral/answers/9647-use-fft-x-as-a-highpass-filter
+
+tr = 1;
+nvol = 512;
+t=[0:tr:(tr*nvol)]; %onset time of each volume
+f=0.02; %every 50 seconds
+signal=sin(2*pi*f*t)';
+f=0.25; %every 4 seconds
+signal=signal + sin(2*pi*f*t)';
+%plot(t,signal)
+
+lower_freq = 0.01;
+upper_freq = 0.4;
+Fs = 1/tr; %Hz, samples per second
+N = size(signal,1);
+dF = Fs/N;
+f = (-Fs/2:dF:Fs/2-dF)';
+% Band-Pass Filter:
+BPF = ((lower_freq < abs(f)) & (abs(f) < upper_freq));
+
+signal=signal-mean(signal);
+spektrum = fftshift(fft(signal))/N;
+spektrum = BPF.*spektrum;
+isignal=ifft(ifftshift(spektrum)); %inverse ifft
+
+%plot(f,BPF);
+plot(isignal); hold on; plot(signal,'r');legend('filtered','data');
