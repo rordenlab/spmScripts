@@ -4,9 +4,9 @@ function coivox = setOrigin12(vols, modality, cropBB)
 %  modality : modality of first image 1=T1, 2=T2, 3=EPI
 %  cropBB : (optional) crop resulting image to standard bounding box
 %Example
-% nii_setOrigin12('T1_P001.nii', 1,true); %T1
+% nii_setOrigin12('T1_P001.nii', 1, true); %T1
 % nii_setOrigin12({'T2_P171.nii','LS_P171.nii'}, 2, true); %T2 with yoked Lesion
-% nii_setOrigin12({'APDTI_LM1021.nii.gz','PADTI_LM1021.nii.gz'}, 3,true); %DTI
+% nii_setOrigin12({'APDTI_LM1021.nii.gz','PADTI_LM1021.nii.gz'}, 3, true); %DTI
 %Chris Rorden 12/2014 (now supports SPM12)
 
 if ~exist('vols','var') || isempty(vols) %no files specified
@@ -23,7 +23,7 @@ setCenterOfIntensitySub(vols);
 coregEstTemplateSub(vols, modality);
 deleteMatFilesSub(vols);
 if exist('cropBB','var') && (cropBB) %only if requested
- nii_clip2bb(vols, [], modality < 3, true); %clipZ for T1 and T2
+ nii_clip2bb(vols, [], modality < 3, true, modality > 2); %clipZ for T1 and T2
 end
 %end MAIN FUNCTION - LOCAL FUNCTIONS FOLLOW
 

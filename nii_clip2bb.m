@@ -1,10 +1,12 @@
-function nii_clip2bb(vols, bb, clipZ, overwrite)
+function nii_clip2bb(vols, bb, clipZ, overwrite, evenXY)
 %Restrict size of image to bounding box - use after coregister
 %  vols  : image(s) to reslice
 %  bb    : bounding-box to preserve
 %  clipZ : if true, all dimensions clipped, if false only X,Y
 %          this is important for fMRI where slice timing depends on slices
 %  overwrite : if true new image replaces old
+%  evenXY : FSL's topup requires images have even number of rows/columns/slices,
+%           If true, output image will have even number of rows/columns
 % Examples
 %  nii_clip2bb('T1_P001.nii',[],true); %T1 scan
 %  nii_clip2bb('ASL_LM1022.nii',[],false); %4D image ASL or fMRI
@@ -17,8 +19,11 @@ if ischar(vols), vols = cellstr(vols); end
 if ~exist('bb','var') || isempty(bb) %bounding box not specified
     bb = [-78 -112 -70; 78 76 85];
 end
-if ~exist('clipZ','var') || isempty(clipZ) %bounding box not specified
+if ~exist('clipZ','var') || isempty(clipZ) %x-clipping not specified
     clipZ = false;
+end
+if ~exist('evenXY','var') || isempty(evenXY) %even rows/columns specified
+    evenXY = false;
 end
 if ~exist('overwrite','var') || isempty(overwrite) %bounding box not specified
     overwrite = false;
@@ -44,6 +49,19 @@ if ~clipZ %do not clip in Z-dimension - preserve number of slices
    mn(3) = 1;
    mx(3) = hdr.dim(3);
 end
+if evenXY %force even number of rows and columns
+	for i = 1: 2
+		if mod(mxD(i)-mnD(i)+1,2) && mnD(i) > 1
+			mnD(i) = mnD(i) - 1;
+		end
+		if mod(mxD(i)-mnD(i)+1,2) && mxD(i) < hdr.dim(i)
+			mxD(i) = mxD(i) + 1;
+		end
+	end
+	if max(mod(mxD(:)-mnD(:)+1,2))
+			fprintf('Warning: odd number of rows/columns/slices may confuse topup: %s\n', fname);
+	end
+end %if evenXY
 mxD = min(hdr.dim, mx);
 mnD = max([1 1 1], mn);
 if (max(mnD) == 1) &&  (min(hdr.dim == mxD) == 1)

@@ -1,9 +1,9 @@
-function [outhdr, outimg] = nii_reslice_target(inhdr, inimg, tarhdr, linearInterp) 
+function [outhdr, outimg] = nii_reslice_target(inhdr, inimg, tarhdr, interp) 
 %Reslice input image to match dimensions of target image (either to disk or memory)
 %  inhdr: image to reslice- either filename of NIfTI header or loaded NIfTI header structure
 %  inimg: (optional) NIfTI image data (only if inhdr is a structure)
 %  tarhdr: image to match- either filename of NIfTI header or loaded NIfTI header structure
-%  linearinterp: (optional) if false nearest neighbor interpolation, else trilinear interpolation (default)
+%  interp: (optional) if 0 nearest neighbor interpolation, else trilinear interpolation (default)
 % Outputs: if not specified, resliced image saved to disk, else returns resliced header and image
 %Chris Rorden (2014) see John Ashburner and Ged Ridgway's reorient.m 
 % http://opensource.org/licenses/BSD-2-Clause
@@ -26,8 +26,8 @@ end
 if ~exist('tarhdr','var')
     tarhdr = spm_select(1,'image','Select target image (source will be resliced to match target)');
 end
-if ~exist('linearInterp','var')
-    linearInterp = false;%true;
+if ~exist('interp','var')
+    interp = 1;%linear
 end
 if ~isstruct(tarhdr)
     tarhdr = spm_vol(tarhdr); %load target header
@@ -55,11 +55,7 @@ else %if reslicing is required
     outimg = zeros(outhdr.dim(1:3));
     for i = 1:imgdim(3)
         M = inv(spm_matrix([0 0 -i])*inv(outhdr.mat)*inhdr.mat);
-        if linearInterp
-            outimg(:,:,i) = spm_slice_vol(inimg, M, imgdim(1:2), 1); % (linear interp)
-        else
-            outimg(:,:,i) = spm_slice_vol(inimg, M, imgdim(1:2), 0); % (nearest neighbor interp)
-        end
+        outimg(:,:,i) = spm_slice_vol(inimg, M, imgdim(1:2), interp); % (linear interp)
     end
 end
 if nargout < 2

@@ -12,6 +12,10 @@ slowestFreq = 0.00390625;
 highestFreq = 0.25;
 inname = fullfile(spm('Dir'),'apriori','brainmask.nii');
 if ~exist(inname, 'file')
+    inname = fullfile(spm('Dir'),'toolbox','fieldmap','brainmask.nii');
+    
+end
+if ~exist(inname, 'file')
     fprintf('%s error: unable to find image named %s\n', mfilename,inname);
     return;
 end
