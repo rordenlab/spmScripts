@@ -17,27 +17,43 @@ function nii_batch12 (p)
 %Examples 
 
 resliceMM = 3; %resolution for reslicing data
-[fmriname, t1name, TRsec, slice_order, phase, magn, prefix] = validatePreprocSub(p);
-%0.) set origin
-%setOriginSub(strvcat(t1name, fmriname, phase, magn), 1);  %#ok<REMFF1> align images to MNI space
-%1.) motion correct, used fieldmap if specifiedclass
-[meanname, prefix] = mocoFMSub(prefix, fmriname, phase, magn);
-%2.) brain extact mean (for better coregistration)
-meanname = betSub(meanname); %brain extract mean image for better coreg
-%3.) slice-time correction
-prefix = slicetimeSub(prefix, fmriname, TRsec, slice_order); %slice-time correct
-%4.) estimate normalization, coregister and reslice fMRI
-prefix = normNewSegSub(t1name, meanname, prefix, fmriname, resliceMM);
-%5.) blur data
-prefix = smoothSub(8, prefix, fmriname); %smooth images
-%-- get rid of images we don't need
-deleteImagesSub(prefix, fmriname); %delete intermediate images
+[fmriname, t1name, TRsec, slice_order, phase, magn] = validatePreprocSub(p);
+prefix = CheckExistingPreprocess(fmriname);
+if isempty(prefix) %preprocessing not yet run 
+    %0.) set origin
+    %setOriginSub(strvcat(t1name, fmriname, phase, magn), 1);  %#ok<REMFF1> align images to MNI space
+    %1.) motion correct, used fieldmap if specifiedclass
+    [meanname, prefix] = mocoFMSub(prefix, fmriname, phase, magn);
+    %2.) brain extact mean (for better coregistration)
+    meanname = betSub(meanname); %brain extract mean image for better coreg
+    %3.) slice-time correction
+    prefix = slicetimeSub(prefix, fmriname, TRsec, slice_order); %slice-time correct
+    %4.) estimate normalization, coregister and reslice fMRI
+    prefix = normNewSegSub(t1name, meanname, prefix, fmriname, resliceMM);
+    %5.) blur data
+    prefix = smoothSub(8, prefix, fmriname); %smooth images
+    %-- get rid of images we don't need
+    deleteImagesSub(prefix, fmriname); %delete intermediate images
 %6.) compute statistics
+end;
 if ~isfield(p,'onsets'), return; end; %only if user provides details
 stat_1st_levelSub (prefix, fmriname, TRsec, p);
 %end nii_batch()
 
 %---------- LOCAL FUNCTIONS FOLLOW
+function prefix = CheckExistingPreprocess(fmriname) %originally '', if 'swa' it means we have smoothed, warped, aligned data
+prefix = '';
+nsessions = length(fmriname(:,1));
+isSWA = true;
+isSW = true;
+for s = 1 : nsessions
+    [pth,nam,ext,~] = spm_fileparts( deblank (fmriname(s,:)));
+    if ~exist(fullfile(pth,['swa', nam, ext]),'file'), isSWA = false; end;
+    if ~exist(fullfile(pth,['sw', nam, ext]), 'file'), isSW = false; end;
+end
+if isSW, prefix = 'sw'; end;
+if isSWA, prefix = 'swa'; end;
+%end
 
 function [meanname, prefix] = mocoFMSub(prefix, fmriname, phase, magn) %motion correct with field map
 if isempty(phase) || isempty(magn)
@@ -180,8 +196,15 @@ if isempty(t1)
    prefix = normSub( meanname, prefix, fmriname, resliceMM);
    return;
 end
-newSegSub(t1); %normalize images
-extractSub(0.01, t1, prefixSub('c1', t1), prefixSub('c2', t1));
+[p, n] = fileparts(t1);
+matname = fullfile(p, ['e' n '_seg8.mat']);
+if exist(matname, 'file')
+    fprintf('skipping normalization, using %s\n', matname);
+    extractSub(0.01, t1, prefixSub('c1e', t1), prefixSub('c2e', t1));
+else
+    matname = newSegSub(t1); %normalize images
+    extractSub(0.01, t1, prefixSub('c1', t1), prefixSub('c2', t1));
+end
 coregEstSub(prefixSub('render', t1), meanname, prefix, fmriname); %make sure fMRI is aligned with T1
 newSegWriteSub(t1, prefixSub('render', t1), '', 0.9); %reslice anatomical with 0.9mm isotropic
 newSegWriteSub(t1, meanname, '', resliceMM);
@@ -261,9 +284,12 @@ function  prefix = newSegWriteSub(t1name, warpname, prefix, resliceMM)
 %reslice img using pre-existing new-segmentation deformation field
 if isempty(warpname) || isempty(t1name), return; end;
 [pth,nam,ext, vol] = spm_fileparts(t1name); 
-defname = fullfile(pth,['y_' nam ext]);
+defname = fullfile(pth,['y_e' nam ext]);
 if ~exist(defname,'file')
-    error('Unable to find new-segment deformation image %s',defname);
+    defname = fullfile(pth,['y_' nam ext]);
+    if ~exist(defname,'file')
+        error('Unable to find new-segment deformation image %s',defname);
+    end
 end
 warpses = getsesvolsSubFlat(prefix, warpname);
 matlabbatch{1}.spm.spatial.normalise.write.subj.def = {defname};
@@ -275,7 +301,7 @@ spm_jobman('run',matlabbatch);
 prefix = ['w' prefix];
 %end newsegwritesub()
 
-function newSegSub(t1, t2)
+function matname = newSegSub(t1, t2)
 %apply new segment - return name of warping matrix
 template = fullfile(spm('Dir'),'tpm','TPM.nii');
 if ~exist(template,'file')
@@ -369,7 +395,7 @@ spm_jobman('run',matlabbatch);
 
 %end coregEstSub()
 
-function [fmriname, t1name, TRsec, slice_order, phase, magn, prefix] = validatePreprocSub(p)
+function [fmriname, t1name, TRsec, slice_order, phase, magn] = validatePreprocSub(p)
 %check all inputs
 if exist('spm','file')~=2; fprintf('%s requires SPM\n',which(mfilename)); return; end;
 isSPM12orNewerSub; %check recent SPM
@@ -695,13 +721,15 @@ if isempty(pth); pth=pwd; end;
 statpth = fullfile(pth, statdirname);
 if exist(statpth, 'file') ~= 7; mkdir(statpth); end;
 fprintf(' SPM.mat file saved in %s\n',statdirname);
+temporalderiv = false;
+hpf = 128;
 if (min([s.duration{:}]) > 5) && (max([s.duration{:}]) < 32); 
     hpf = mean([s.duration{:}]) * 4;
-	temporalderiv = false;
 	fprintf('Block design : using %.1fs high pass filter with no temporal derivative.\n',hpf);
+elseif kTR > 5.0 
+	fprintf('Sparse design : using %.1fs high pass filter without a temporal derivative.\n',hpf);
 else
     temporalderiv = true;
-    hpf = 128;
 	fprintf('Event-related design : using %.1fs high pass filter with a temporal derivative.\n',hpf);
 end;
 % MODEL SPECIFICATION

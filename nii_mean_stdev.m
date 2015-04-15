@@ -1,8 +1,9 @@
-function nii_mean_stdev (fnms, normBrightness)
+function nii_mean_stdev (fnms, normBrightness, outname)
 %Given multiple volumes, generate mean, standard deviation, SNR maps and report unusual images. Useful for quality assurance
 % fnms : filenames to average (optional)
 % normBrightness : if false (0) raw intensity is used. if true (1) image intensity
 %                  scaled so minimum is 0 and median of non-zero voxels is 1
+% outname : optional prefix appended to output image name
 %Chris Rorden, 2014
 % http://opensource.org/licenses/BSD-2-Clause
 %SNR is mean/stdev http://www.ncbi.nlm.nih.gov/pubmed/17126038
@@ -17,6 +18,9 @@ end;
 if ~exist('normBrightness','var') %no files
     normBrightness = str2double(cell2mat(inputdlg('Scale image intensity to normalize brightness? (0=no,1=yes):', 'Adjust brightness', 1,{'0'})));
 end;
+if ~exist('outname', 'var')
+    outname = '';
+end
 if size(fnms,1) < 1
     return;
 elseif size(fnms,1) == 1 %4D: compute mean and stDev using inbuilt Matlab functions
@@ -28,9 +32,9 @@ if (n < 2)
     error('Not enough images to estimate mean and stdev');
 end
 %save statistical images (optional)
-saveImgSub(['mean_of_' num2str(n) '.nii'],hdr,meanImg);
-saveImgSub(['stdev_of_' num2str(n) '.nii'],hdr,sdImg);
-saveImgSub(['snr_of_' num2str(n) '.nii'],hdr,meanImg ./ sdImg);
+saveImgSub([outname 'mean_of_' num2str(n) '.nii'],hdr,meanImg);
+saveImgSub([outname 'stdev_of_' num2str(n) '.nii'],hdr,sdImg);
+saveImgSub([outname 'snr_of_' num2str(n) '.nii'],hdr,meanImg ./ sdImg);
 %report mean z-score for each image
 if size(fnms,1) == 1
     reportZSub4D(meanImg, sdImg, normBrightness, fnms)

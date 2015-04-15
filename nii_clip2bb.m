@@ -35,13 +35,13 @@ for i = 1: 8
 	if (mod(i,2) == 1), mmi(1) = bb(2,1); end
 	if (mod(i-1,4) < 2), mmi(2) = bb(2,2); end;
 	if (mod(i-1,8) < 4), mmi(3) = bb(2,3); end;
-	mm(i,:) = mmi;
+	mm(i,:) = mmi; %#ok<AGROW>
 end
 hdr = spm_vol([fname,',1']); %read header of 1st volume
 v2m = hdr.mat; %voxel2mm transform
 m2v=inv(v2m); %mm2voxel transform
 for i=1:size(mm,1)
-    vox(i,1:3)=mm(i,:)*m2v(1:3,1:3)' + m2v(1:3,4)';
+    vox(i,1:3)=mm(i,:)*m2v(1:3,1:3)' + m2v(1:3,4)'; %#ok<AGROW>
 end 
 mn = floor(min(vox));
 mx = ceil(max(vox));
@@ -49,6 +49,9 @@ if ~clipZ %do not clip in Z-dimension - preserve number of slices
    mn(3) = 1;
    mx(3) = hdr.dim(3);
 end
+
+mxD = min(hdr.dim, mx);
+mnD = max([1 1 1], mn);
 if evenXY %force even number of rows and columns
 	for i = 1: 2
 		if mod(mxD(i)-mnD(i)+1,2) && mnD(i) > 1
@@ -62,8 +65,6 @@ if evenXY %force even number of rows and columns
 			fprintf('Warning: odd number of rows/columns/slices may confuse topup: %s\n', fname);
 	end
 end %if evenXY
-mxD = min(hdr.dim, mx);
-mnD = max([1 1 1], mn);
 if (max(mnD) == 1) &&  (min(hdr.dim == mxD) == 1)
 	fprintf('%s :No need to crop image\n', mfilename);
 	return;
@@ -72,13 +73,28 @@ end;
 vx = (mxD(1)-mnD(1)+1)*(mxD(2)-mnD(2)+1)*(mxD(3)-mnD(3)+1);
 if vx <= 1, error('image not coregistered'); end;
 pct = 100* vx/(hdr.dim(1)*hdr.dim(2)*hdr.dim(3));
-fprintf('%s cropping image from %dx%dx%d -> %dx%dx%d (%g%%)\n', mfilename, hdr.dim(1), hdr.dim(2), hdr.dim(3), mxD(1)-mnD(1)+1,mxD(2)-mnD(2)+1, mxD(3)-mnD(3)+1, pct);
+h.dim = hdr.dim;
+fprintf('%s cropping image from %dx%dx%d -> %dx%dx%d (%g%%)\n', mfilename, h.dim(1), h.dim(2), h.dim(3), mxD(1)-mnD(1)+1,mxD(2)-mnD(2)+1, mxD(3)-mnD(3)+1, pct);
 for v = 1 : numel(vols) %apply parameters from first session to others
     [pth,nam,ext, ~] = spm_fileparts(deblank(vols{v}));
     fname = fullfile(pth,[nam ext]); %strip volume label
-    hdr = spm_vol([fname]); %read header - this time 4D if specified
+    hdr = spm_vol([fname,',1']); %read header of 1st volume
+    if (h.dim(1) ~= hdr.dim(1)) || (h.dim(2) ~= hdr.dim(2)) || (h.dim(3) ~= hdr.dim(3))
+        error('%s error: Image dimensions do not match %dx%dx%d ~= %dx%dx%d %s %s', mfilename, ...
+            h.dim(1),h.dim(2),h.dim(3), hdr.dim(1),hdr.dim(2),hdr.dim(3), deblank(vols{1}), deblank(vols{v}));
+        
+    end
+end
+for v = 1 : numel(vols) %apply parameters from first session to others
+    [pth,nam,ext, ~] = spm_fileparts(deblank(vols{v}));
+    fname = fullfile(pth,[nam ext]); %strip volume label
+    hdr = spm_vol(fname); %read header - this time 4D if specified
     img = spm_read_vols(hdr); %load image
     hdr = spm_vol([fname,',1']); %read header of 1st volume
+    if (h.dim(1) ~= hdr.dim(1)) || (h.dim(2) ~= hdr.dim(2)) || (h.dim(3) ~= hdr.dim(3))
+        error('%s error: Image dimensions do not match %s %s', mfilename, deblank(vols{1}), deblank(vols{v}));
+        
+    end
     img = img(mnD(1):mxD(1), mnD(2):mxD(2), mnD(3):mxD(3), :); %clip image dimensions
     origin= mnD*v2m(1:3,1:3)' + v2m(1:3,4)';
     hdr.mat(1:3,4) = origin;
