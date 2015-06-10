@@ -15,7 +15,7 @@ end
 [pth,nam,ext,vol] = spm_fileparts( deblank (imgName4D));
 imgName4D = fullfile(pth,[nam, ext]); %remove volume is 'img.nii,1' -> 'img.nii'
 if ~exist(imgName4D), return; end;
-if ~exist('skipVol') || ~exist('nVol')
+if ~exist('skipVol','var') || ~exist('nVol','var')
     prompt = {'Skip first N volumes:','Retain N volumes'};
     dlg_title = 'Values for cropping';
     num_lines = 1;

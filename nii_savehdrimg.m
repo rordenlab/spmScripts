@@ -15,8 +15,11 @@ for i = 1: nDim
         hdr.private.dime.dim(i+1) = size(img,i);
     end
 end
-if hdr.dt == 128
-    hdr.private.dime.dim(4) = hdr.private.dime.dim(4)/3;
+
+if (hdr.dt(1) == 128) 
+    hdr.private.dime.dim(1) = nDim; 
+    hdr.private.dime.dim(4) = (numel(img)/size(img,1))/size(img,2)/3;
+    hdr.private.dime.dim(5) = 1;
 end
 %now save the data
 write_niiSub(fname, hdr, img);

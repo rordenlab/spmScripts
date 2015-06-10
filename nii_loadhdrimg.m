@@ -40,7 +40,6 @@ else
 end
 %read header
 hdr = spm_vol_Sub(filename, data);
-
 if nargout < 2, return; end; %only read image if requested
 if strcmpi(fext,'.hdr') || strcmpi(fext,'.img') %analyze style .hdr and .img pairs
     if ~exist(hdr.fname, 'file')
@@ -50,13 +49,13 @@ if strcmpi(fext,'.hdr') || strcmpi(fext,'.img') %analyze style .hdr and .img pai
     data = fread(fileID);
     data = uint8(data);
     fclose(fileID);
-    
 end
 img = spm_read_vols_Sub(hdr, data);
 %end nii_loadhdrimg()
 
 function img = spm_read_vols_Sub(hdr, data)
 % --- load NIfTI voxel data: mimics spm_read_vol without requiring SPM
+nSamplesPerVoxel = 1;
 switch hdr.dt(1)
    case   2,
       bitpix = 8;  myprecision = 'uint8';
@@ -68,19 +67,22 @@ switch hdr.dt(1)
       bitpix = 32; myprecision = 'single';%'float32';
    case  64,
       bitpix = 64; myprecision = 'double';%'float64';
+   case   128,
+      bitpix = 8;  myprecision = 'uint8';
+      nSamplesPerVoxel = 3;
    case 512 
       bitpix = 16; myprecision = 'uint16';
    case 768 
       bitpix = 32; myprecision = 'uint32';
    otherwise
-      error('This datatype is not supported'); 
+      error('This datatype is not supported %d', hdr.dt(1)); 
 end
 if numel(hdr.dim) > 3
     nVol = prod(hdr.dim(4:end));
 else
     nVol = 1; %3D data has only a single volume
 end
-myvox = hdr.dim(1)*hdr.dim(2)*hdr.dim(3)*nVol;
+myvox = hdr.dim(1)*hdr.dim(2)*hdr.dim(3)*nVol*nSamplesPerVoxel;
 %ensure file is large enough
 imgbytes = myvox * (bitpix/8); %image bytes plus offset
 offset = double(hdr.pinfo(3));
@@ -92,8 +94,12 @@ end;
 
 img = typecast(data(offset+1:offset+imgbytes),myprecision);%fread(fid, myvox, myprecision, 0, myformat);
 img = double(img);
-img = img(:).*hdr.pinfo(1)+hdr.pinfo(2); %apply scale slope and intercept
-img = reshape(img, hdr.dim(1), hdr.dim(2), hdr.dim(3), nVol);
+if nSamplesPerVoxel > 1
+    %
+else
+    img = img(:).*hdr.pinfo(1)+hdr.pinfo(2); %apply scale slope and intercept
+    img = reshape(img, hdr.dim(1), hdr.dim(2), hdr.dim(3), nVol);
+end;
 %end spm_read_vols_Sub()
 
 function [Hdr] = spm_vol_Sub(filename, data)
