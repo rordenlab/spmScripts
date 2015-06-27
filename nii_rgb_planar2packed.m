@@ -1,10 +1,10 @@
-function nii_rgb2packed(fnm)
-%for 24-bit images, convert between planar (Analyze) and triplet (NIfTI) image storage
-%Analyze stores data rrrr..rggggg...gbbbb...b, NIfTI rgbrgbrgb
+function nii_rgb_planar2packed(fnm)
+%for 24-bit (Red/Green/Blue) images, convert between planar (Analyze) and triplet (NIfTI) image storage
+%Analyze stores data as 2D planes rrrr..rggggg...gbbbb...b, NIfTI as packed triplets rgbrgbrgb...
+%This script detects input images format and converts to the other style
 % fnm : name of image to convert
-%Analyze (ana) requires planar data, NIfTI (nii) specificies triplet
 %Examples
-% rgb_planar('analyzeRGB.nii');
+% nii_rgb_planar2packed('analyzeRGB.nii');
 
 if ~exist('fnm','var') %file name not specified
     [A,Apth] = uigetfile({'*.nii;*.gz;*.hdr;';'*.*'},'Select Red-Green-Blue image to convert');
@@ -28,7 +28,7 @@ else
     fnm = fullfile(pth, ['n2a_' nam ext]);
     nii_savehdrimg(fnm, hdr,imgPlanar);
 end
-%nii_rgb2packed()
+%nii_rgb_planar2packed()
 
 function dx = packedDx(imgRGB, nX, nY, nZ)
 %how similar are voxels to their neighbor assuming rgbrgbrgb...
