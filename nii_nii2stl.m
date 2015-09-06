@@ -2,6 +2,12 @@ function nii_nii2stl (fnm, sthresh)
 %input: T1 file in NIfTI format, output: mesh image
 % fnm : input image
 % sthresh : threshold for deciding if tissue is brain or air
+%Similar
+% http://bartferguson.nl/blog/?p=5
+% http://hackaday.com/2015/08/25/you-own-your-mri-brainscan-do-something-interesting-with-it/
+% http://www.pegors.net/3d-printing.html
+% http://www.instructables.com/id/3D-Printing-from-MRI-data-in-5-steps/
+% https://www.shapeways.com/blog/archives/21040-how-to-make-a-3d-print-of-your-brain.html
 %Example
 % nii_nii2stl('cr.nii')
 
