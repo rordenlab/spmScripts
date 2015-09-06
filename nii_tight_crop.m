@@ -1,25 +1,20 @@
 function nii_tight_crop(fnm)
 %discard exterior rows/columns/slices that are zeros, output has 'z' prefix
-% fnms : file name[s] of image[s] (optional)
-%Notes
-% For slower (2D) implementation see http://blogs.warwick.ac.uk/nichols/entry/zero_nans_in/
+% fnms : file name of image (optional)
 %Examples
-% nii_zeronan; %use GUI
-% nii_zeronan('img.nii');
-% nii_zeronan(strvcat('a.nii','b.nii'));
+% nii_tight_crop; %use GUI
+% nii_tight_crop('img.nii');
 
-if ~exist('fnm','var')
+if ~exist('fnm','var') %no filename specified
 	fnm = spm_select(1,'image','Select image[s] for NaN removal'); 
 end
-
+%load image
 hdr = spm_vol(deblank(fnm));
 img = spm_read_vols(hdr);
 if size(img,4) > 1
     error('%s designed for 3D images with only a single volume\n',mfilename);
 end
 img(isnan(img)) = 0;%zero nans
-
-
 %collapse in x dim
 for lo = 1: size(img,1)
     if max(max(img(lo,:,:))) > 0
@@ -71,10 +66,12 @@ end
 if hi < size(img,3)
    img(:,:,(hi+1):end) = [] ;
 end
+%abort if there are no voxels to crop
 if (hdr.dim(1) == size(img,1)) && (hdr.dim(2) == size(img,2)) && (hdr.dim(3) == size(img,3))
     fprintf('Unable to crop this image: positive intensity observed to all edges\n');
     return
 end
+%save cropped image
 hdr.dim(1) = size(img,1);
 hdr.dim(2) = size(img,2);
 hdr.dim(3) = size(img,3);
