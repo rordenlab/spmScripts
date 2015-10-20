@@ -1,4 +1,4 @@
-function coivox = setOrigin12(vols, modality, cropBB)
+function coivox = nii_setOrigin12(vols, modality, cropBB)
 %Align images so that origin and alignment roughly match MNI space
 %  vols : cell string of image name(s) - first image used for estimate, others yoked
 %  modality : modality of first image 1=T1, 2=T2, 3=EPI

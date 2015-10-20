@@ -19,6 +19,15 @@ function [outhdr, outimg] = nii_reslice_target(inhdr, inimg, tarhdr, interp)
 %  tarhdr.mat = [-1 0 0 79; 0 1 0 -113; 0 0 1 -51; 0 0 0 1];
 %  tarhdr.dim = [157 189 136];
 %  nii_reslice_target('qCBV.nii','',tarhdr);
+% Next example: rescale for maximum resolution (in voxels)
+%  fnm = 'single_subj_T1.nii';
+%  outres = 256; %rescale so maximum dimension has 256 voxels
+%  tarhdr = spm_vol(fnm);
+%  mx = max(tarhdr.dim(:));
+%  scale = outres/mx;
+%  tarhdr.dim = floor(tarhdr.dim * scale);
+%  tarhdr.mat(1:3,1:3) = tarhdr.mat(1:3,1:3)/scale;
+%  nii_reslice_target(fnm,'',tarhdr);
 
 if ~exist('inhdr','var')
     inhdr = spm_select(1,'image','Select source image that will be resliced');

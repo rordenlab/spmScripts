@@ -1,6 +1,6 @@
 function tr_flipangle(tr)
 %Plots optimal flip angle as a function of repetition time (TR) for given T1
-%
+% tr : repeat time in mulliseconds
 %http://en.wikipedia.org/wiki/Ernst_angle
 %http://desoft03.usc.es/rmnweb/calibrations/Ernstcalculator.htm
 %From  Mark Cohen's http://airto.ccn.ucla.edu/BMCweb/HowTo/CalcFlip.html
@@ -18,11 +18,15 @@ function tr_flipangle(tr)
 %   1.5T  1000     710   4000  1435   300
 %   3.0T  1331     832   4000  1584   380
 %For fMRI studies please read http://www.ncbi.nlm.nih.gov/pubmed/21073963
-T1 = 1400; %assumed T1 for brain tissue
+%
+%Example 
+% tr_flipangle(2000); %compute optimal flip angle for 2sec TR on 3T
 
+T1 = 1400; %assumed T1 for brain tissue
+%T1 = 832; %white matter
 
 if nargin <1 %no Positive files
-    tr = 1550; %you can set the tr to any value you wish
+    tr = 720; %you can set the tr to any value you wish
 end;
 
 %compute a single optimal flip angle

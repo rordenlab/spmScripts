@@ -130,11 +130,7 @@ if thresh <= 0
     m=m.*w;
 else
     mask= zeros(size(m));
-    for px=1:length(w(:)),
-      if w(px) >= thresh
-        mask(px) = 255;
-      end;
-    end;
+    mask(w >= thresh) = 255;
     if DilateVox > 0
         mask = dilatesub(mask, DilateVox);
     end;

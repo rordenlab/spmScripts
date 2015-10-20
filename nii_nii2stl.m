@@ -190,11 +190,7 @@ if thresh <= 0
     end;
 else
     mask= zeros(size(m));
-    for px=1:length(w(:)),
-      if w(px) >= thresh
-        mask(px) = 255;
-      end;
-    end;
+    mask(w >= thresh) = 255;
     maskIn = mask;
     spm_smooth(maskIn,mask,1); %feather the edges
     mask = mask / 255;
