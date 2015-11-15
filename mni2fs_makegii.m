@@ -10,7 +10,11 @@ function mni2fs_makegii (mnivol, hem, smoothdata, InterpMethod)
 % mni2fs_makegii('./examples/motor_4t95.nii.gz','lh',0, 'linear')
 % mni2fs_makegii; %use graphical interface
 
-
+if exist('spm','file')~=2; fprintf('%s requires SPM\n',which(mfilename)); return; end;
+mni2fs_fn = fullfile(fileparts(mfilename('fullpath')),['mni2fs.m']);
+if exist(mni2fs_fn,'file')~=2; fprintf('please place %s in the folder with mni2fs.m (https://github.com/dprice80/mni2fs) \n',which(mfilename)); return; end;
+surfrender_fn = fullfile(fileparts(mfilename('fullpath')),['/surf/lh.pial.surf.gii']);
+if exist(surfrender_fn,'file')~=2; fprintf('%s unable to find mni2fs files (https://github.com/dprice80/mni2fs)  \n',which(mfilename), surfrender_fn); return; end;
 if ~exist('mnivol','var') %filename not specified: graphical interface
     [A,Apth] = uigetfile({'*.nii;*.hdr;*.gz;'},'Select NIFTI image in MNI space', 'MultiSelect', 'off');
     mnivol = strcat(Apth,char(A));
@@ -42,7 +46,7 @@ if ischar(mnivol)
     else
         NII = load_untouch_nii(mnivol);
     end
-    gii_fn = fullfile(p,[n,'.gii']);
+    gii_fn = fullfile(p,[n,'2',hem,'.pial.gii']);
 elseif isstruct(mnivol)
     NII = mnivol;
     gii_fn = 'vertexColors.gii';
@@ -75,9 +79,6 @@ Z = reshape(XYZmni(:,3),sz);
 load(fullfile(thisfolder,'surf/transmats.mat'),'Tfstovox_rcor','Trsvoxtomni_rcor');
 V = [V ones(length(V),1)]*Tfstovox_rcor'*Trsvoxtomni_rcor';
 Vsurf = interpn(X,Y,Z,NII.img,V(:,1),V(:,2),V(:,3),InterpMethod);
-min(Vsurf(:))
-max(Vsurf(:))
-
 if (min(Vsurf(:)) == max(Vsurf(:)) ) 
     fprintf('No variability in output intensity (all voxels = %g). Input varies from %g..%g\n', min(Vsurf(:)), min(NII.img(:)), max(NII.img(:)) ); 
     return;
@@ -91,6 +92,9 @@ end;
 %  end
 %  save_untouch_nii(NII,'test_surf.nii');
 % end
+fprintf('Background image %s\n', surfrender_fn);
+fprintf('Overlay image %s\n', gii_fn);
+fprintf('Overlay image intensity range %g..%g\n', min(Vsurf(:)), max(Vsurf(:)));
 % save the data
 g = gifti;
 g = subsasgn(g, struct('type','.','subs','cdata'), Vsurf);
