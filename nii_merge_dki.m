@@ -12,36 +12,38 @@ if ischar(V), V = cellstr(V); end;
 num = numel(V);
 hdr = []; img = []; bvec = []; bval = []; %vol = [];
 if num < 2, error('You must specify multiple files'); end;
+nvol = 0;
 for n = 1: num
     [hd,im, bve,bva] = loadSub(char(V(n)));
-    if (size(im,4) < minVol), continue; end;
     if isempty(im), continue; end;
+    nvol = size(im,4);
+    if (nvol < minVol), continue; end;
     if ~isempty(img)
         if (size(im,1) ~= size(img,1)) || (size(im,2) ~= size(img,2)) || (size(im,3) ~= size(img,3))
             fprintf('WARNING: you are attempting to merge images with different dimensions\n');
         end
     end
+    fprintf('Stacking %d volumes from %s\n', size(im,4), char(V(n))); 
     bvec = [bvec; bve];
     bval = [bval; bva];
     %vol = [vol; size(im,4)];
     hdr = [hdr; hd]; %#ok<*AGROW>
     img = cat(4,img, im);
-    
-    
 end
 
-if numel(hdr) < 2, error('Unable to load more than one image'); end;
+if size(img,4) <= nvol, error('Unable to load more than one image'); end;
 hdrOut = hdr(1);
 [p,n,x] = spm_fileparts(hdrOut.fname);
-hdrOut.fname = fullfile(p,['m', n, x]);
+n = ['DTI_', int2str(size(img,4)),'_', n]; 
+hdrOut.fname = fullfile(p,[ n, x]);
 for vol=1:size(img,4)
     hdrOut.n(1)=vol;
     spm_write_vol(hdrOut,img(:, :, :, vol));
 end;
 if abs(max(bvec(:))) == 0, return; end;
-dlmwrite(fullfile(p,['m', n, '.bval']), bval','delimiter','\t');
-dlmwrite(fullfile(p,['m', n, '.bvec']), bvec','delimiter','\t');
-plotBvecSub(fullfile(p,['m', n, '.bvec']));
+dlmwrite(fullfile(p,[ n, '.bval']), bval','delimiter','\t');
+dlmwrite(fullfile(p,[n, '.bvec']), bvec','delimiter','\t');
+plotBvecSub(fullfile(p,[n, '.bvec']));
 %end nii_merge_dki()
 
 function plotBvecSub(fnm)
@@ -53,7 +55,8 @@ axis vis3d;
 rotate3d
 %end plotBvecSub()
 
-function [hd,im, bve,bva] = loadSub(fnm);
+function [hd,im, bve,bva] = loadSub(fnm)
+im = []; bve = []; bva = [];
 [p,n,x] = spm_fileparts(fnm);
 if (length(x)==3)  && min((x=='.gz')==1) 
     fnm = char(gunzip(fnm));
@@ -63,6 +66,11 @@ else
     delnam = '';
 end
 hd = spm_vol(fnm); %input header
+if hd(1).dt(1) == 128
+    fprintf('Warning: skipping RGB image %s\n', fnm);
+    if ~isempty(delnam), delete(delnam); end;
+    return;
+end
 im = spm_read_vols(hd);%Input image
 hd = hd(1);
 if ~isempty(delnam), delete(delnam); end;
