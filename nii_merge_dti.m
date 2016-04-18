@@ -8,11 +8,11 @@ function nii_merge_dti(fnms, minVol)
 % nii_merge_dti(strvcat('98_AP_3.nii.gz','99_AP_7.nii.gz'));
 % nii_merge_dti(strvcat('98_AP_3.nii.gz','99_AP_7.nii.gz'), 2);%at least 2 vols
 if nargin < 1,
-   [files,pth] = uigetfile({'*.gz;*.nii;*.hdr;';'*.*'},'Choose positive DTI[s]', 'MultiSelect', 'on');
+   [files,pth] = uigetfile({'*.gz;*.nii;*.hdr;';'*.*'},'Choose images to merge', 'MultiSelect', 'on');
    fnms = strcat(pth,char(files));
 end
 if nargin < 2,
-   minVol = 4;
+   minVol = 1;
 end
 if size(fnms,1) < 2
    error('%s requires more than one image', mfilename);
@@ -52,7 +52,7 @@ for vol=1:nV
     spm_write_vol(hdr,imgCat(:, :, :, vol));
 end;
 if (max(bvecCat) == min(bvecCat))
-    fprintf('Warning: bvec/bval files will not be created (no variability in b-values)');
+    fprintf('Warning: bvec/bval files will not be created (no variability in b-values)\n');
     return;
 end;
 dlmwrite(fullfile(p,['DTI_',n, '.bvec']),bvecCat','delimiter','\t');
@@ -130,7 +130,3 @@ if (length(ext)==3)  && min((ext=='.gz')==1)
     ext = [ext2 ext];
 end;
 %end fsl_filepartsSub()
-
-
-
-

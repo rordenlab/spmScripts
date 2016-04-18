@@ -6,7 +6,7 @@ function nii_merge_dki (V)
 
 minVol = 3; %1 to merge all images, 3 to merge images with at least 3 volumes
 if nargin <1 %no files
- V = spm_select(inf,'^.*\.(gz|nii)$','Select gz files to decompress');
+ V = spm_select(inf,'^.*\.(gz|nii)$','Select DKI images to merge');
 end;
 if ischar(V), V = cellstr(V); end;
 num = numel(V);

@@ -20,6 +20,7 @@ for i=1:size(fnms,1)
     else
     	[pth nm ext] = spm_fileparts(fnm);
         numNan = sum(isnan(img(:)));
+        %img(img > 800) = 800; %example clipping extreme values
         fprintf('%s has %d voxels with not-a-number (NaN) intensities\n', nm, numNan);
         if numNan > 0
             hdr.fname = fullfile(pth, ['z' nm ext]);  

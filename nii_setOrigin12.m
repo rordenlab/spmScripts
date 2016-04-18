@@ -100,7 +100,7 @@ end
 matlabbatch{1}.spm.spatial.coreg.estimate.ref = {template};
 matlabbatch{1}.spm.spatial.coreg.estimate.source = {[deblank(vols{1}),',1']};%{'/Users/rorden/Desktop/3D.nii,1'};
 if  numel(vols) > 1
-    matlabbatch{1}.spm.spatial.coreg.estimate.other = vols(2:end);% {''};
+    matlabbatch{1}.spm.spatial.coreg.estimate.other = vols(2:end)';%transpose: column vector required!
 else
     matlabbatch{1}.spm.spatial.coreg.estimate.other = {''};
 end
