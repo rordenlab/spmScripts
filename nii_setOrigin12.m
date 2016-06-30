@@ -9,6 +9,10 @@ function coivox = nii_setOrigin12(vols, modality, cropBB)
 % nii_setOrigin12({'APDTI_LM1021.nii.gz','PADTI_LM1021.nii.gz'}, 3, true); %DTI
 %Chris Rorden 12/2014 (now supports SPM12)
 
+% if ~exist('cropBB','var') 
+%     cropBB = true;
+%     fprintf('%s will crop image!\n', mfilename);
+% end
 if ~exist('vols','var') || isempty(vols) %no files specified
  vols = spm_select(inf,'image','Reset origin for selected image(s) (estimated from 1st)');
 end
@@ -16,7 +20,7 @@ if ischar(vols), vols = cellstr(vols); end
 vols = nii_ungz (vols, true, true);
 if ~exist('modality','var') || isempty(modality) %no files specified
  modality = 1;
- fprintf('%s Modality not specified, assuming T1\n', mfilename);
+ fprintf('%s Modality not specified, assuming %d (1=T1,2=T2,3=EPI)\n', mfilename, modality);
 end
 nii_isSPM12orNewer;
 setCenterOfIntensitySub(vols);

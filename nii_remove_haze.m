@@ -1,6 +1,9 @@
-function nii_remove_haze(fnm)
+function fnm = nii_remove_haze(fnm)
 %Remove speckles in air surrounding object
-% fnm : name of image to process
+% fnm : name of nifti image to process
+%Examples
+% nii_remove_haze %use GUI
+% nii_remove_haze('T1.nii')
 
 if ~exist('fnm','var')
     fnm = spm_select(1,'image','Select image[s] for NaN removal');
@@ -32,7 +35,8 @@ orig = mask + 0;
 spm_smooth(orig,mask,2); %feather the edges
 img = img .* mask;
 [pth nm ext] = spm_fileparts(fnm);
-hdr.fname = fullfile(pth, ['z' nm ext]);  
+fnm = fullfile(pth, ['z' nm ext]);
+hdr.fname = fnm;  
 spm_write_vol(hdr,img);
 end
 
