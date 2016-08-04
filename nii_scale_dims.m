@@ -37,9 +37,10 @@ for i=1:size(fnms,1)
     img = spm_read_vols(hdr);
 
     hdrOut = hdr(1);
-    hdrOut.dim(1) = hdr(1).dim(1)*scale(1);
-    hdrOut.dim(2) = hdr(1).dim(2)*scale(2);
-    hdrOut.dim(3) = hdr(1).dim(3)*scale(3);
+    hdrOut.dim(1) = round(hdr(1).dim(1)*scale(1));
+    hdrOut.dim(2) = round(hdr(1).dim(2)*scale(2));
+    hdrOut.dim(3) = round(hdr(1).dim(3)*scale(3));
+
     hdrOut.mat(1:3, 1:3) = hdr(1).mat(1:3, 1:3)*[1/scale(1) 0 0; 0 1/scale(2) 0; 0 0 1/scale(3)];
     % http://stackoverflow.com/questions/12520152/resizing-3d-matrix-image-in-matlab
     % monotonic, use the methods '*linear', '*cubic', or '*nearest'.

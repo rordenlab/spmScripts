@@ -4,8 +4,11 @@ function nii_make3d
 
 inname = fullfile(spm('Dir'),'apriori','brainmask.nii');
 if ~exist(inname, 'file')
-    fprintf('%s error: unable to find image named %s\n', mfilename,inname);
-    return;
+    inname =  fullfile(spm('Dir'),'canonical','avg152T1.nii');
+    if ~exist(inname, 'file')
+        fprintf('%s error: unable to find image named %s\n', mfilename,inname);
+        return;
+    end;
 end
 hdr = spm_vol([inname,',1']); 
 img = spm_read_vols(hdr);
