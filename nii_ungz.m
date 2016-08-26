@@ -12,7 +12,6 @@ if nargin <1 %no files
  V = spm_select(inf,'^.*\.(gz|voi)$','Select gz files to decompress');
 end;
 if ischar(V), V = cellstr(V); end
-
 Vout = {};
 for i=1:numel(V)
   ref = deblank(V{i});

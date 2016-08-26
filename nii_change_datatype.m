@@ -34,12 +34,18 @@ if (spm_type(hdr.dt,'intt')) %integer output
     dmn  = spm_type(hdr.dt,'minval');
     mx = max(img(:));
     mn = min(img(:));
-    if dmn < 0
-    	sf = max(mx/dmx,-mn/dmn);
-    else
-    	sf = mx/dmx;
+    intercept = 0;
+    if dmn < 0 %output is signed integer
+    	slope = max(mx/dmx,-mn/dmn);
+    else %output is UNSIGNED integer
+        if mn < 0 %some negative values: offset values
+            intercept = mn;
+            slope = (mx-mn)/dmx;
+        else
+            slope = mx/dmx;
+        end
     end
-    hdr.pinfo = [sf;0;0];
+    hdr.pinfo = [slope;intercept;0];
 else
     
     fprintf('Saving %s as real-numbers (floating point) with %d-bits per voxel\n',hdr.fname, spm_type(hdr.dt,'bits'));
