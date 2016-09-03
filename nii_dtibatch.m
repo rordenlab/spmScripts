@@ -16,7 +16,7 @@ if ~exist('dtiBvecNames','var') %file not specified
    dtiBvecNames = strcat(Apth,char(A));
 end;
 if ~exist('isEddyCorrect','var') %file not specified
-   isEddyCorrect = true; 
+   isEddyCorrect = false; 
 end;
 
 fsldir= '/usr/local/fsl';
