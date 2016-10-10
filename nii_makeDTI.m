@@ -1,13 +1,51 @@
-function nii_makeDTI
+function nii_makeDTI (RASorder)
 %Generates a simple NIfTI format DTI image
-% demonstrates voxel offset
+% RASorder : (optional) if false then columns:rows:slices not in right:anterior:superior order
+%Examples
+% nii_makeDTI; %order: RAS 
+% nii_makeDTI(1) %order: ARS
+% nii_makeDTI(2); %order: LAS 
+% nii_makeDTI(3); %order: SRA
+
+
 fnm = 'test';
 pixDimMM = 3; %distance between voxel centers
 %bvec = makeBVec7; %6 diffusion bvectors small file but somewhat uneven
 bvec = makeBVec33; %32 diffusion bvectors large file 
-writeBvecBval (bvec, fnm);
 nVol = size(bvec,1);
 dim = [9, 9, 9, nVol]; %image resolution in columns, rows, slices, volumes
+
+%create matrix
+mat = eye(4);
+mat(1:3, 1:3) = mat(1:3, 1:3) * pixDimMM;
+mat(1,4) = -pixDimMM * ((dim(1)+1)/2); %center, indexed from 1 not 0
+mat(2,4) = -pixDimMM * ((dim(2)+1)/2);
+mat(3,4) = -pixDimMM * ((dim(3)+1)/2);
+%SPM's matrices are indexed from 1
+% hdr = spm_vol('test.nii,1');
+% mm = (hdr.mat * [0 0 1 1; 0 0 9 1]') %mm of 1st and 9th slice (z=-12..12)
+%if you use fslhd you will see matrix indexed from 0
+% >fslhd test.nii
+% mat0 = [3 0 0 -12; 0 3 0 -12; 0 0 3 -12; 0 0 0 1]
+% mm = (mat0 * [0 0 0 1; 0 0 8 1]') %mm of 1st and 9th slice (z=-12..12)
+if exist('RASorder','var') && (RASorder > 0) && (RASorder < 4)
+    %permute rows so no longer RAS
+    if RASorder == 1
+        mat = mat(:,[2 1 3 4]); %order: ARS
+        fnm = [fnm 'ARS'];
+    elseif RASorder == 2
+        mat(1,:) = -mat(1,:);
+        fnm = [fnm 'LAS'];
+    elseif RASorder == 3
+        mat = mat(:,[3 1 2 4]); %order: SRA
+        fnm = [fnm 'SRA'];
+    end;
+else
+    fnm = [fnm 'RAS'];
+end
+%create BVec/BVal files
+writeBvecBval (bvec, fnm);
+%create NIfTI image
 dtype = 32; %precision of data
 ofile    = [fnm, '.nii'];%spm_file(parfile,'path',opts.outdir,'ext',opts.ext);
 scale = 1;
@@ -24,18 +62,6 @@ switch dtype
     otherwise
         error('Unknown data type.');
 end
-mat = eye(4);
-mat(1:3, 1:3) = mat(1:3, 1:3) * pixDimMM;
-mat(1,4) = -pixDimMM * ((dim(1)+1)/2); %center, indexed from 1 not 0
-mat(2,4) = -pixDimMM * ((dim(2)+1)/2);
-mat(3,4) = -pixDimMM * ((dim(3)+1)/2);
-%SPM's matrices are indexed from 1
-% hdr = spm_vol('test.nii,1');
-% mm = (hdr.mat * [0 0 1 1; 0 0 9 1]') %mm of 1st and 9th slice (z=-12..12)
-%if you use fslhd you will see matrix indexed from 0
-% >fslhd test.nii
-% mat0 = [3 0 0 -12; 0 3 0 -12; 0 0 3 -12; 0 0 0 1]
-% mm = (mat0 * [0 0 0 1; 0 0 8 1]') %mm of 1st and 9th slice (z=-12..12)
 dato     = file_array(ofile,dim,[dtype 0],0,scale,inter);
 N        = nifti;
 N.dat    = dato;
@@ -132,12 +158,18 @@ for z = 1 : dim(3)
     end
     %fprintf('%g\n', dwi);
 	for y = 1 : dim(2) 
+        yRamp = (y/dim(2)) * 2; %make low rows dimmer
+        %if yRamp > 1, yRamp = 1; end;
 		for x = 1 : dim(1)
             dx = (sz -norm(center-[x,y,z]))/sz;
             if (~isBZero) && (dx < 0.5)
                 dx = 0; 
             end
-			img(x,y,z)=dwi * dx;
+            if yRamp < 1.0 %no FA in dark rows
+                img(x,y,z)= dx * yRamp;
+            else
+                img(x,y,z)= dwi * dx;
+            end;
 		end;
 	end;
 end;
