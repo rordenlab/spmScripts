@@ -48,6 +48,7 @@ ref = ref - 1;%fsl indexes volumes from 0
 function maskNam = betSub(fsldir,imgNam) %brain extract
 setenv('FSLDIR', fsldir);
 [pth,nam,ext] = fileparts(imgNam);
+if upper(ext) == '.GZ', [~,nam] = fileparts(nam); end;
 maskNam = fullfile(pth, nam ); %will generate image "dti_mask.nii.gz"
 command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; ${FSLDIR}/bin/bet %s %s -f 0.3 -g 0 -n -m"\n',imgNam,maskNam);
 maskNam = fullfile(pth, [nam '_mask.nii.gz']); %will generate image "dti_mask.nii.gz"
