@@ -22,6 +22,7 @@ img = spm_read_vols (hdr);
 nV = size(img,4); %[nX nY nZ nV] = size(XYZV);
 hdr = hdr(1); %required for multi-volume files
 hdr.fname = fullfile(pth,['p' nam ext]);
+oldDataType = hdr.dt(1);
 hdr.dt    =[newType,0];
 if (spm_type(hdr.dt,'intt')) %integer output
     %from spm_file_merge
@@ -45,6 +46,9 @@ if (spm_type(hdr.dt,'intt')) %integer output
             slope = mx/dmx;
         end
     end
+    if (spm_type(oldDataType,'intt')) && (hdr.pinfo(1) == 1) && (hdr.pinfo(2) == 0) && (mx <= dmx) && (mn >= dmn)
+        slope = 1; intercept = 0; %output has sufficient range for input: no need for scaling
+    end;
     hdr.pinfo = [slope;intercept;0];
 else
     
