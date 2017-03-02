@@ -28,12 +28,9 @@ end
 for i=1:size(fnms,1)
     fnm = deblank(fnms(i,:));
     hdr = spm_vol(fnm);
-    %if numel(hdr) > 1
-    %    error('%s designed for 3D images with only a single volume\n',mfilename);
-    %end
-    if (mod(hdr(1).dim(1),2) ~= 0) || (mod(hdr(1).dim(2),2) ~= 0)
-        error('%s requires images to have an even number of rows and columns\n',mfilename);
-    end 
+    %if (mod(hdr(1).dim(1),2) ~= 0) || (mod(hdr(1).dim(2),2) ~= 0)
+    %    error('%s requires images to have an even number of rows and columns (not %d %d)\n',mfilename, hdr(1).dim(1), hdr(1).dim(2));
+    %end 
     img = spm_read_vols(hdr);
 
     hdrOut = hdr(1);
