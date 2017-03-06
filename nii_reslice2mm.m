@@ -9,7 +9,7 @@ inhdr = spm_vol(fnm);
 inimg = spm_read_vols(inhdr); %load input image
 outhdr = inhdr(1);
 outhdr.mat = [-2 0 0 80; 0 2 0 -114; 0 0 2 -52; 0 0 0 1]; %<- 2mm
-outhdr.dim = [79 95 69]; %<-2mm, 
+outhdr.dim = [79 95 69]; %<-2mm,
 %1mm-> outhdr.mat = [-1 0 0 79; 0 1 0 -113; 0 0 1 -71; 0 0 0 1];
 %1mm-> outhdr.dim = [157 189 156];
 outimg = zeros(outhdr.dim);
@@ -23,4 +23,4 @@ for vol = 1: numel(inhdr) %for every volume of 4D data
     outhdr.n(1)=vol;
     spm_write_vol(outhdr,outimg); %save image to disk
 end;
-%end reslice1mmSub()
+%end reslice2mm()

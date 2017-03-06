@@ -30,7 +30,6 @@ for n = 1: num
     hdr = [hdr; hd]; %#ok<*AGROW>
     img = cat(4,img, im);
 end
-
 if size(img,4) <= nvol, error('Unable to load more than one image'); end;
 hdrOut = hdr(1);
 [p,n,x] = spm_fileparts(hdrOut.fname);

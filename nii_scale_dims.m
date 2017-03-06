@@ -27,6 +27,7 @@ if numel(scale) < 3
 end
 for i=1:size(fnms,1)
     fnm = deblank(fnms(i,:));
+    fnm = unGzSub(fnm);
     hdr = spm_vol(fnm);
     %if (mod(hdr(1).dim(1),2) ~= 0) || (mod(hdr(1).dim(2),2) ~= 0)
     %    error('%s requires images to have an even number of rows and columns (not %d %d)\n',mfilename, hdr(1).dim(1), hdr(1).dim(2));
@@ -43,21 +44,23 @@ for i=1:size(fnms,1)
     % monotonic, use the methods '*linear', '*cubic', or '*nearest'.
     [pth nm ext] = spm_fileparts(fnm);
     hdrOut.fname = fullfile(pth, ['z' nm ext]); 
-    fprintf('Resizing from %dx%dx%d to %dx%dx%d\n', hdr(1).dim(1), hdr(1).dim(2), hdr(1).dim(3), ...
+    fprintf('Resizing %d volumes from %dx%dx%d to %dx%dx%d\n', size(img,4), hdr(1).dim(1), hdr(1).dim(2), hdr(1).dim(3), ...
         hdrOut.dim(1), hdrOut.dim(2), hdrOut.dim(3) );
     for vol=1:size(img,4)
         hdrOut.n(1)=vol;
-        %imgIn = img(:, :, :, vol); 
         imgOut  = resizeSub(img(:, :, :, vol), hdrOut.dim(1:3),'*cubic');
         spm_write_vol(hdrOut, imgOut);
     end;
-    %imgOut  = resizeSub(img, hdrOut.dim(1:3),'*cubic');
-    %
-    %[pth nm ext] = spm_fileparts(fnm);
-    %hdrOut.fname = fullfile(pth, ['z' nm ext]);  
-    %spm_write_vol(hdrOut,imgOut);
 end
-%end main function - local functions follow
+%end nii_scale_dims() - local functions follow
+
+function fnm = unGzSub(fnm);
+[~,~,ext] = spm_fileparts(fnm);
+if ~strcmpi(ext,'.gz'), return; end;
+fnmGz = fnm;
+fnm = char(gunzip(fnmGz));
+delete(fnmGz); %fsl does not allow extensions .nii .nii.gz for same image
+%end unGzSub()
 
 function mat_rs = resizeSub(varargin)
 %RESIZE     Resize a matrix.

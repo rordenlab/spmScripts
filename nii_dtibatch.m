@@ -16,24 +16,46 @@ if ~exist('dtiBvecNames','var') %file not specified
    dtiBvecNames = strcat(Apth,char(A));
 end;
 if ~exist('isEddyCorrect','var') %file not specified
-   isEddyCorrect = false; 
+   isEddyCorrect = true;
 end;
-
 fsldir= '/usr/local/fsl';
-
+if ~exist(fsldir,'dir')
+    error('Unable to find %s', fsldir); 
+end
 for i=1:size(dtiBvecNames,1)
-    dtiBvec = deblank(dtiBvecNames(i,:)); %positive image 
+    dtiBvec = deblank(dtiBvecNames(i,:)); %positive image
     [pth,nam,ext] = fileparts(dtiBvec);
-    imgNam = fullfile(pth, [nam '.nii']); %file.nii
-    if ~exist(imgNam,'file'), imgNam = fullfile(pth, [nam '.nii.gz']); end; %file.nii.gz
+    imgNam = fullfile(pth, [nam '.nii']); %img.nii
+    if ~exist(imgNam,'file')
+    	imgNam = fullfile(pth, [nam '.nii.gz']); %img.nii.gz
+    end;
     exist(imgNam,'file');
     refVol = refVolSub(dtiBvec);
-
     %next: permute all possible b-vector alternatives
-    dtiSub(fsldir,imgNam,dtiBvec,refVol, isEddyCorrect)
+    dtiSub(fsldir,imgNam,dtiBvec,refVol, isEddyCorrect);
+    tracktionSub(dtiBvec);    
 end
-viewSub(fsldir,dtiBvec) %compute vectors
+%viewSub(fsldir,dtiBvec) %compute vectors
 %end main loop.... subroutines follow
+
+function tracktionSub(dtiBvec)
+if strcmpi(computer, 'GLNXA64')
+    exeNam = 'tracktionLX'
+else
+   exeNam = 'tracktion'; 
+end
+exeNam = fullfile(fileparts(which(mfilename)), exeNam);
+p = fileparts(exeNam);
+if isempty(p)
+   exeNam = fullfile(pwd, exeNam); 
+end
+if ~exist(exeNam,'file')
+   fprintf('Skipped tractography: unable to find %s\n', exeNam);
+   return; 
+end
+command=sprintf('%s "%s"\n',exeNam, dtiBvec);
+system(command);
+%end tracktionSub()
 
 function ref = refVolSub(vNam) %find first B0 volume
 [pth,nam,ext] = fileparts(vNam);
@@ -45,12 +67,20 @@ if isempty(ref), error('No b-zero volume in file %s', bNam); end;
 ref = ref - 1;%fsl indexes volumes from 0
 %refVolSub
 
-function maskNam = betSub(fsldir,imgNam) %brain extract
+function maskNam = betSub(fsldir,imgNam, refVol) %brain extract
 setenv('FSLDIR', fsldir);
 [pth,nam,ext] = fileparts(imgNam);
-if upper(ext) == '.GZ', [~,nam] = fileparts(nam); end;
+if strcmpi(ext,'.gz'), [~,nam] = fileparts(nam); end;
+inNam = imgNam;
 maskNam = fullfile(pth, nam ); %will generate image "dti_mask.nii.gz"
-command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; ${FSLDIR}/bin/bet %s %s -f 0.3 -g 0 -n -m"\n',imgNam,maskNam);
+if (exist('refVol','var')) && (refVol > 0)
+    %fslroi WIPDiffHR2.2SENSE4.2_ID123_12 msk 32 1
+    refNam = fullfile(pth, [nam '_' num2str(refVol)] ); %will generate image "dti_mask.nii.gz"
+    command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; ${FSLDIR}/bin/fslroi %s %s %d 1"\n',imgNam,refNam, refVol);
+    system(command);
+    inNam = refNam;
+end
+command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; ${FSLDIR}/bin/bet %s %s -f 0.3 -g 0 -n -m"\n',inNam,maskNam);
 maskNam = fullfile(pth, [nam '_mask.nii.gz']); %will generate image "dti_mask.nii.gz"
 system(command);
 %end preprocSub
@@ -63,14 +93,14 @@ setenv('FSLDIR', fsldir);
 setenv('PATH', [getenv('PATH') ':/usr/local/fsl/bin'])
 command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; ${FSLDIR}/bin/eddy_correct %s %s %d"\n',imgNam,eccNam, refVol);
 system(command);
-eccNam = fullfile(pth, [nam, '_ecc.nii.gz']); %Eddy corrected data    
+eccNam = fullfile(pth, [nam, '_ecc.nii.gz']); %Eddy corrected data
 %end preprocSub
 
 function dtiSub(fsldir,imgNam,vNam, refVol, isEddyCorrect) %compute vectors
 %%/usr/local/fsl/bin/dtifit --data=/Users/rorden/Desktop/sliceOrder/dicom2/dtitest/dti_eddy.nii.gz --out=/Users/rorden/Desktop/sliceOrder/dicom2/dtitest/dti --mask=/Users/rorden/Desktop/sliceOrder/dicom2/dtitest/dti_mask.nii.gz --bvecs=/Users/rorden/Desktop/sliceOrder/dicom2/dtitest/s004a001.bvec --bvals=/Users/rorden/Desktop/sliceOrder/dicom2/dtitest/s003a001.bval
 [pth,nam,ext] = fileparts(vNam);
 bNam = fullfile(pth, [ nam '.bval'] ); %Eddy corrected data
-maskNam = betSub(fsldir,imgNam);
+maskNam = betSub(fsldir,imgNam, refVol);
 if ~exist(maskNam, 'file'), error('BET failed to create %s', maskNam); end;
 if isEddyCorrect
     eccNam = preprocSub(fsldir,imgNam,refVol, maskNam);
