@@ -29,13 +29,13 @@ for i=1:size(dtiBvecNames,1)
     if ~exist(imgNam,'file')
     	imgNam = fullfile(pth, [nam '.nii.gz']); %img.nii.gz
     end;
-    exist(imgNam,'file');
+    if ~exist(imgNam,'file'), warning('Unable to find %s\n', imgNam); continue; end;
     refVol = refVolSub(dtiBvec);
     %next: permute all possible b-vector alternatives
     dtiSub(fsldir,imgNam,dtiBvec,refVol, isEddyCorrect);
     tracktionSub(dtiBvec);    
 end
-%viewSub(fsldir,dtiBvec) %compute vectors
+viewSub(fsldir,dtiBvec) %display results
 %end main loop.... subroutines follow
 
 function tracktionSub(dtiBvec)
@@ -65,7 +65,7 @@ b = textread(bNam);
 ref = find(b==0, 1, 'first');
 if isempty(ref), error('No b-zero volume in file %s', bNam); end;
 ref = ref - 1;%fsl indexes volumes from 0
-%refVolSub
+%end refVolSub()
 
 function maskNam = betSub(fsldir,imgNam, refVol) %brain extract
 setenv('FSLDIR', fsldir);
@@ -83,10 +83,10 @@ end
 command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; ${FSLDIR}/bin/bet %s %s -f 0.3 -g 0 -n -m"\n',inNam,maskNam);
 maskNam = fullfile(pth, [nam '_mask.nii.gz']); %will generate image "dti_mask.nii.gz"
 system(command);
-%end preprocSub
+%end betSub()
 
-function eccNam = preprocSub(fsldir,imgNam,refVol, maskNam) %eddy current correct and brain extract
-fprintf('Using eddy_correct: you may be able to get better results with topup+eddy\n');
+function eccNam = eddySub(fsldir,imgNam,refVol) %eddy current correct and brain extract
+fprintf('Using eddy_correct: consider using eddy (and topup)\n');
 [pth,nam,ext] = fileparts(imgNam);
 eccNam = fullfile(pth, [nam, '_ecc']); %will generate image "dti_eddy.nii.gz"
 setenv('FSLDIR', fsldir);
@@ -94,7 +94,7 @@ setenv('PATH', [getenv('PATH') ':/usr/local/fsl/bin'])
 command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; ${FSLDIR}/bin/eddy_correct %s %s %d"\n',imgNam,eccNam, refVol);
 system(command);
 eccNam = fullfile(pth, [nam, '_ecc.nii.gz']); %Eddy corrected data
-%end preprocSub
+%end eddySub()
 
 function dtiSub(fsldir,imgNam,vNam, refVol, isEddyCorrect) %compute vectors
 %%/usr/local/fsl/bin/dtifit --data=/Users/rorden/Desktop/sliceOrder/dicom2/dtitest/dti_eddy.nii.gz --out=/Users/rorden/Desktop/sliceOrder/dicom2/dtitest/dti --mask=/Users/rorden/Desktop/sliceOrder/dicom2/dtitest/dti_mask.nii.gz --bvecs=/Users/rorden/Desktop/sliceOrder/dicom2/dtitest/s004a001.bvec --bvals=/Users/rorden/Desktop/sliceOrder/dicom2/dtitest/s003a001.bval
@@ -103,7 +103,7 @@ bNam = fullfile(pth, [ nam '.bval'] ); %Eddy corrected data
 maskNam = betSub(fsldir,imgNam, refVol);
 if ~exist(maskNam, 'file'), error('BET failed to create %s', maskNam); end;
 if isEddyCorrect
-    eccNam = preprocSub(fsldir,imgNam,refVol, maskNam);
+    eccNam = eddySub(fsldir,imgNam,refVol);
 else
     eccNam = imgNam;
 end

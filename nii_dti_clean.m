@@ -2,6 +2,8 @@ function fnm = nii_dti_clean(fnm, thresh);
 %Detect and remove DTI volumes with substantial movement artifacts
 %Warning: only for DTI: for fMRI we need to impute missing timepoints
 % fnm : name of file to check and decimate if required
+%Alternative
+% fsl's eddy with outlier replacement (--repol)
 %Examples
 % nii_dti_clean; %use GUI
 % nii_dti_clean('MUSC_2.7.nii')
