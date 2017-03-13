@@ -50,6 +50,7 @@ for v = 1: nvol
 end
 if sum(reject(:)) < 1
    fprintf('%s quitting: no volumes z>%g (max z=%g) in %s\n', mfilename, zThresh, max(z(:)), fnm);
+   return;
 end
 fprintf('%s found %d volumes with z>%g in %s\n', mfilename, sum(reject(:)), zThresh, fnm);
 %return raw image to 4D
