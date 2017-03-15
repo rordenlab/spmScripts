@@ -2,9 +2,9 @@ function nii_enat_norm(T1,lesion,T2, UseXTemplate, vox, bb, DeleteIntermediateIm
 %Perform enantiomorphic normalization using SPM12
 % see Nachev et al. (2008) http://www.ncbi.nlm.nih.gov/pubmed/18023365
 %  T1: filename of T1 image
-%  Lesion: filename of lesion map 
+%  Lesion: filename of lesion map
 %  T2: (optional) filename of image used to draw lesion, if '' then lesion drawn on T1
-%  UseXTemplate: if false (default) standard SPM template is used, else special template 
+%  UseXTemplate: if false (default) standard SPM template is used, else special template
 %Examples
 % nii_enat_norm('T1_LM1054.nii','LS_LM1054.nii','') %lesion drawn on T1 scan
 % nii_enat_norm('T1_LM1054.nii','LS_LM1054.nii',''T2_LM1054.nii') %lesion drawn on T2 scan
@@ -32,15 +32,22 @@ if ~exist('autoOrigin','var')
 end
 T1 = stripVolSub(T1); lesion = stripVolSub(lesion); T2 = stripVolSub(T2);
 if isDoneSub(T1), fprintf('Already done: skipping normalization of %s\n',T1); return; end;
-[T1,lesion,T2] = checkDimsSub(T1, lesion, T2); %check alignment
+if ~isempty(lesion), [T1,lesion,T2] = checkDimsSub(T1, lesion, T2); end; %check alignment
 %0: rough estimate for origin and alignment
 if autoOrigin
-    setOriginSub({T1, T2, lesion}, 1); 
+    setOriginSub({T1, T2, lesion}, 1);
+end
+if isempty(lesion) %if no lesion - standard normalization
+   newSegSub(T1,'', UseXTemplate);
+   %2: create 'b' (brain extracted) image without scalp signal
+    bT1 = extractSub(ssthresh, T1, prefixSub('c2', T1), prefixSub('c1', T1));
+    rT1 = newSegWriteSub(T1, bT1, [0.9 0.9 0.9]); %#ok<NASGU>
+    %wT1 = newSegWriteSub(T1, T1, vox, bb); %#ok<NASGU>
+   return;
 end
 %1: align lesion/t2 to match T1
 [rT2, rlesion] = coregEstWriteSub(T1,T2,lesion); %#ok<ASGLU>
-
-rlesion = smoothSub(rlesion, 3); 
+rlesion = smoothSub(rlesion, 3);
 %2: make image without lesion
 eT1 = entiamorphicSub (T1, rlesion);
 %[eT1, erT2] = entiamorphicSub (T1, rlesion, rT2); %for multichannel
@@ -57,11 +64,11 @@ wT1 = newSegWriteSub(eT1, T1, vox, bb); %#ok<NASGU>
 if DeleteIntermediateImages, deleteSub(T1); end;
 %end nii_enat_norm()
 
-%--- local functions follow 
+%--- local functions follow
 %function img = smoothSub(img, FWHM)
 %[pth,nam,ext] = spm_fileparts(img);
 %smth = fullfile(pth, ['s' nam ext]);
-%spm_smooth(img, smth, FWHM, 0);  
+%spm_smooth(img, smth, FWHM, 0);
 %img = smth;
 %end smoothSub()
 
@@ -69,7 +76,7 @@ function isDone = isDoneSub(T1)
 isDone = false;
 [pth,nam,ext] = fileparts(T1);
 b = fullfile(pth,['b', nam, ext]); %brain extracted image
-if ~exist(b,'file'), return; end; 
+if ~exist(b,'file'), return; end;
 defname = fullfile(pth,['y_' nam ext]); %control normalization
 edefname = fullfile(pth,['y_e' nam ext]); %patient normalization
 if exist(defname,'file') || exist(edefname,'file'), isDone = true; end;
@@ -90,7 +97,7 @@ if (spm_type(hdr.dt,'intt')) %integer data
 end
 smoothFWHMmm = [FWHM FWHM FWHM];
 VOX = sqrt(sum(hdr.mat(1:3,1:3).^2));
-smoothFWHMvox = smoothFWHMmm/VOX; %for 3D arrays the FWHM is specified in voxels 
+smoothFWHMvox = smoothFWHMmm/VOX; %for 3D arrays the FWHM is specified in voxels
 presmooth = im+0; %+0 forces new matrix
 spm_smooth(presmooth,im,smoothFWHMvox,0);
 [pth,nam,ext] = spm_fileparts(img);
@@ -108,6 +115,7 @@ img = fullfile(n, [m, x]);
 function [T1,lesion,T2] = checkDimsSub(T1, lesion, T2)
 if ~exist(T1,'file'), error('T1 image required %s', T1); end;
 if ~exist('lesion','var'), return; end;
+if isempty(lesion), return; end;
 if ~exist(lesion,'file'), error('Lesion image not found %s', lesion); end;
 hdrT1 = spm_vol(T1);
 hdrLS = spm_vol(lesion);
@@ -116,7 +124,7 @@ mmT1 = (hdrT1.mat * [0 0 0 1]');
 dxT1 = sqrt(sum((mmT1(1:3)-mmLS(1:3)).^2)); %error between T1 and lesion
 if exist('T2','var') && ~isempty(T2)
    if ~exist(T2,'file'), error('T2 image not found %s', T2); end;
-   hdrT2 = spm_vol(T2); 
+   hdrT2 = spm_vol(T2);
    %we compute distance differently for T2/Lesion as these will be resliced...
    [mnT2, mxT2] = bbSub(hdrT2); %range of T2 bounding box
    [mnLS, mxLS] = bbSub(hdrLS); %range of Lesion bounding box
@@ -128,12 +136,12 @@ if exist('T2','var') && ~isempty(T2)
             fprintf('WARNING: T2 dimensions do not match lesion - ASSUME lesion drawn on T1');
         else
             fprintf('WARNING: Neither T2 nor T1 aligned to lesion.');
-        end 
+        end
    end
    return;
 end %if T2 is present
 if ~all(hdrT1.dim == hdrLS.dim)
-    error('WARNING: T1 dimensions do not match lesion %s %s',T1, lesion);    
+    error('WARNING: T1 dimensions do not match lesion %s %s',T1, lesion);
 end
 if (dxT1 > 0.25)
     fprintf('WARNING: T1 poorly aligned to lesion.');
@@ -173,7 +181,7 @@ if exist('spm','file') ~= 2, error('Please install SPM12 or later'); end;
 if r < 6225, error('Please update your copy of SPM'); end;
 %end isSPM12orNewer()
 
-function t1Bet = extractSub(thresh, t1, c1, c2, c3)   
+function t1Bet = extractSub(thresh, t1, c1, c2, c3)
 %subroutine to extract brain from surrounding scalp
 % t1: anatomical scan to be extracted
 % c1: gray matter map
@@ -192,7 +200,7 @@ w = spm_read_vols(wi);
 if nargin > 4 && ~isempty(c3)
    ci = spm_vol(c3);%CSF map
    c = spm_read_vols(ci);
-   w = c+w; 
+   w = c+w;
 end;
 w = g+w;
 if thresh <= 0
@@ -227,7 +235,7 @@ matlabbatch{1}.spm.spatial.normalise.write.woptions.bb = bb;
 matlabbatch{1}.spm.spatial.normalise.write.woptions.vox = vox;
 matlabbatch{1}.spm.spatial.normalise.write.woptions.interp = 1; %4; //trilinear avoids ringing
 spm_jobman('run',matlabbatch);
-targetname = prefixSub('w', targetname); 
+targetname = prefixSub('w', targetname);
 if ~exist('binarize','var') || ~binarize, return; end;
 hdr = spm_vol(targetname);
 img = spm_read_vols(hdr);
@@ -307,7 +315,7 @@ end
 if ~exist('lesionNam','var') %no files specified
     lesionNam = spm_select(1,'image','Select lesion image');
 end
-if isempty(lesionNam) 
+if isempty(lesionNam)
     intactT1 = T1;
     return;
 end
@@ -327,37 +335,36 @@ intactT1 = insertSub(T1, T1lr, lesionNam);
 function namFilled = insertSub(nam, namLR, lesion)
 %namLR donates voxels masked by lesion to image nam
 if isempty(nam), namFilled =''; return; end;
-hdrLesion = spm_vol(lesion); 
+hdrLesion = spm_vol(lesion);
 imgLesion = spm_read_vols(hdrLesion);
 rdata = +(imgLesion > (max(imgLesion(:))/2)); %binarize raw lesion data, + converts logical to double
 spm_smooth(rdata,imgLesion,4); %blur data
 rdata = +(imgLesion > 0.05); %dilate: more than 5%
 spm_smooth(rdata,imgLesion,8); %blur data
 %now use lesion map to blend flipped and original image
-hdr = spm_vol(nam); 
+hdr = spm_vol(nam);
 img = spm_read_vols(hdr);
-hdr_flip = spm_vol(namLR); 
+hdr_flip = spm_vol(namLR);
 imgFlip = spm_read_vols(hdr_flip);
-size(img)
-size(imgLesion)
+if ~isequal(size(img), size(imgLesion)), error('Dimensions do not match %s %s', lesion, nam); end;
 rdata = (img(:) .* (1.0-imgLesion(:)))+ (imgFlip(:) .* imgLesion(:));
 rdata = reshape(rdata, size(img));
 [pth, nam, ext] = spm_fileparts(hdr.fname);
 hdr_flip.fname = fullfile(pth,['e' nam ext]);%image with lesion filled with intact hemisphere
-spm_write_vol(hdr_flip,rdata); 
+spm_write_vol(hdr_flip,rdata);
 namFilled = hdr_flip.fname;
 %insertSub()
 
 function namLR = flipSub (nam)
 if isempty(nam), namLR = ''; return; end;
-hdr = spm_vol(nam); 
+hdr = spm_vol(nam);
 img = spm_read_vols(hdr);
 [pth, nam, ext] = spm_fileparts(hdr.fname);
 namLR = fullfile(pth, ['LR', nam, ext]);
 hdr_flip = hdr;
 hdr_flip.fname = namLR;
 hdr_flip.mat = [-1 0 0 0; 0 1 0 0; 0 0 1 0; 0 0 0 1] * hdr_flip.mat;
-spm_write_vol(hdr_flip,img); 
+spm_write_vol(hdr_flip,img);
 %end flipSub()
 
 function [T2, lesion] = coregEstWriteSub(T1, T2, lesion)
@@ -405,15 +412,15 @@ if ~exist('modality','var') %no files specified
  fprintf('%s Modality not specified, assuming T1\n', mfilename);
 end
 coivox = ones(4,1);
-%extract filename 
+%extract filename
 [pth,nam,ext, ~] = spm_fileparts(deblank(vols{1}));
 fname = fullfile(pth,[nam ext]); %strip volume label
 %report if filename does not exist...
-if (exist(fname, 'file') ~= 2) 
+if (exist(fname, 'file') ~= 2)
  	fprintf('%s error: unable to find image %s.\n',mfilename,fname);
-	return;  
+	return;
 end;
-hdr = spm_vol([fname,',1']); %load header 
+hdr = spm_vol([fname,',1']); %load header
 img = spm_read_vols(hdr); %load image data
 img = img - min(img(:));
 img(isnan(img)) = 0;
@@ -424,13 +431,13 @@ coivox(1) = sum(sum(sum(img,3),2)'.*(1:size(img,1)))/sumTotal; %dimension 1
 coivox(2) = sum(sum(sum(img,3),1).*(1:size(img,2)))/sumTotal; %dimension 2
 coivox(3) = sum(squeeze(sum(sum(img,2),1))'.*(1:size(img,3)))/sumTotal; %dimension 3
 XYZ_mm = hdr.mat * coivox; %convert from voxels to millimeters
-fprintf('%s center of brightness differs from current origin by %.0fx%.0fx%.0fmm in X Y Z dimensions\n',fname,XYZ_mm(1),XYZ_mm(2),XYZ_mm(3)); 
-for v = 1:   numel(vols) 
+fprintf('%s center of brightness differs from current origin by %.0fx%.0fx%.0fmm in X Y Z dimensions\n',fname,XYZ_mm(1),XYZ_mm(2),XYZ_mm(3));
+for v = 1:   numel(vols)
     fname = deblank(vols{v});
     if ~isempty(fname)
         [pth,nam,ext, ~] = spm_fileparts(fname);
-        fname = fullfile(pth,[nam ext]); 
-        hdr = spm_vol([fname ',1']); %load header of first volume 
+        fname = fullfile(pth,[nam ext]);
+        hdr = spm_vol([fname ',1']); %load header of first volume
         fname = fullfile(pth,[nam '.mat']);
         if exist(fname,'file')
             destname = fullfile(pth,[nam '_old.mat']);
@@ -447,7 +454,7 @@ for v = 1:   numel(vols)
     end
 end%for each volume
 coregEstTemplateSub(vols, modality);
-for v = 1:   numel(vols) 
+for v = 1:   numel(vols)
     [pth, nam, ~, ~] = spm_fileparts(deblank(vols{v}));
     fname = fullfile(pth,[nam '.mat']);
     if exist(fname,'file')

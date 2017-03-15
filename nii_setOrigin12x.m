@@ -1,4 +1,4 @@
-function coivox = nii_setOrigin12(vols, modality, cropBB)
+function coivox = nii_setOrigin12x(vols, modality, cropBB)
 %Align images so that origin and alignment roughly match MNI space
 %  vols : cell string of image name(s) - first image used for estimate, others yoked
 %  modality : modality of first image 1=T1, 2=T2, 3=EPI
@@ -9,7 +9,7 @@ function coivox = nii_setOrigin12(vols, modality, cropBB)
 % nii_setOrigin12({'APDTI_LM1021.nii.gz','PADTI_LM1021.nii.gz'}, 3, true); %DTI
 %Chris Rorden 12/2014 (now supports SPM12)
 
-% if ~exist('cropBB','var') 
+% if ~exist('cropBB','var')
 %     cropBB = true;
 %     fprintf('%s will crop image!\n', mfilename);
 % end
@@ -32,7 +32,7 @@ end
 %end MAIN FUNCTION - LOCAL FUNCTIONS FOLLOW
 
 function deleteMatFilesSub(vols)
-for v = 1:   numel(vols) 
+for v = 1:   numel(vols)
     [pth, nam, ~, ~] = spm_fileparts(deblank(vols{v}));
     fname = fullfile(pth,[nam '.mat']);
     if exist(fname,'file')
@@ -43,15 +43,15 @@ end %for each volume
 
 function setCenterOfIntensitySub(vols)
 coivox = ones(4,1);
-%extract filename 
+%extract filename
 [pth,nam,ext, ~] = spm_fileparts(deblank(vols{1}));
 fname = fullfile(pth,[nam ext]); %strip volume label
 %report if filename does not exist...
-if (exist(fname, 'file') ~= 2) 
+if (exist(fname, 'file') ~= 2)
  	fprintf('%s error: unable to find image %s.\n',mfilename,fname);
-	return;  
+	return;
 end;
-hdr = spm_vol([fname,',1']); %load header 
+hdr = spm_vol([fname,',1']); %load header
 img = spm_read_vols(hdr); %load image data
 img = img - min(img(:));
 img(isnan(img)) = 0;
@@ -62,13 +62,13 @@ coivox(1) = sum(sum(sum(img,3),2)'.*(1:size(img,1)))/sumTotal; %dimension 1
 coivox(2) = sum(sum(sum(img,3),1).*(1:size(img,2)))/sumTotal; %dimension 2
 coivox(3) = sum(squeeze(sum(sum(img,2),1))'.*(1:size(img,3)))/sumTotal; %dimension 3
 XYZ_mm = hdr.mat * coivox; %convert from voxels to millimeters
-fprintf('%s center of brightness differs from current origin by %.0fx%.0fx%.0fmm in X Y Z dimensions\n',fname,XYZ_mm(1),XYZ_mm(2),XYZ_mm(3)); 
-for v = 1:   numel(vols) 
+fprintf('%s center of brightness differs from current origin by %.0fx%.0fx%.0fmm in X Y Z dimensions\n',fname,XYZ_mm(1),XYZ_mm(2),XYZ_mm(3));
+for v = 1:   numel(vols)
     fname = deblank(vols{v});
     if ~isempty(fname)
         [pth,nam,ext, ~] = spm_fileparts(fname);
-        fname = fullfile(pth,[nam ext]); 
-        hdr = spm_vol([fname ',1']); %load header of first volume 
+        fname = fullfile(pth,[nam ext]);
+        hdr = spm_vol([fname ',1']); %load header of first volume
         fname = fullfile(pth,[nam '.mat']);
         if exist(fname,'file')
             destname = fullfile(pth,[nam '_old.mat']);
