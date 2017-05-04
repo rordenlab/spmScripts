@@ -7,8 +7,7 @@ function Vout = nii_ungz (V, isCell, del)
 %Output: list of unzipped images
 % Examples
 %   nii_ungz('brain.nii.gz');
-
-if nargin <1 %no files
+if ~exist('V','var') || isempty(vols) %no files specified
  V = spm_select(inf,'^.*\.(gz|voi)$','Select gz files to decompress');
 end;
 if ischar(V), V = cellstr(V); end
@@ -36,3 +35,4 @@ for i=1:numel(V)
 end; %for each file
 if exist('isCell','var') && isCell, return; end;
 Vout = strvcat(Vout); %#ok<REMFF1>
+%end nii_ungz()

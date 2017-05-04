@@ -14,16 +14,21 @@ function nii_nii2stl (fnm, sthresh)
 if ~exist('fnm','var')  %fnmFA not specified
    fnm = spm_select(1,'image','Select T1 scan'); 
 end;
-if ~exist('sthresh','var'), sthresh = 0.05; end; 
+if ~exist('sthresh','var'), sthresh = 0.15; end; 
 if isempty(which('spm')), error('Install SPM12'); end;
 if isempty(which('nii_reslice_target')), error('Put nii_reslice_target.m in your Matlab path'); end;
-%1 get approximately aligned to template
-coregEstTemplateSub(fnm);
-%2 crop so we have a rough bounding box
-fnm = cropImgSub(fnm); 
-% segment to find tissue types
-newSegSub(fnm);
-%3: set non-brain tissue to zero
+if false
+    %1 get approximately aligned to template
+    coregEstTemplateSub(fnm);
+    %2 crop so we have a rough bounding box
+    fnm = cropImgSub(fnm);
+    % segment to find tissue types
+    newSegSub(fnm);
+    %3: set non-brain tissue to zero
+else
+    [p,n,x] = spm_fileparts(fnm);
+    fnm = fullfile(p,['r',n,x]);
+end
 extractSub(sthresh, fnm, false); %save scalp extracted image
 bfnm = extractSub(sthresh, fnm, true); %save binarized image
 %4: make watertight
@@ -352,7 +357,8 @@ function stlwriteSub(fnm, FV)
 % Create the facets
 facets = single(FV.vertices');
 %The following line is similar to MeshLab's Filters/Normals/InvertFacesOrientation
-facets([1,3],:)=facets([3,1],:);
+
+%facets([1,3],:)=facets([3,1],:);
 facets = reshape(facets(:,FV.faces'), 3, 3, []);
 % Compute their normals
 V1 = squeeze(facets(:,2,:) - facets(:,1,:));
