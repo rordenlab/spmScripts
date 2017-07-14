@@ -1,14 +1,14 @@
 function [outhdr, outimg] = nii_reslice_target(inhdr, inimg, tarhdr, interp) 
 %Reslice input image to match dimensions of target image (either to disk or memory)
 %  inhdr: image to reslice- either filename of NIfTI header or loaded NIfTI header structure
-%  inimg: (optional) NIfTI image data (only if inhdr is a structure)
+%  inimg: (optonal) NIfTI image data (only if inhdr is a structure)
 %  tarhdr: image to match- either filename of NIfTI header or loaded NIfTI header structure
 %  interp: (optional) if 0 nearest neighbor interpolation, else trilinear interpolation (default)
 % Outputs: if not specified, resliced image saved to disk, else returns resliced header and image
 %Chris Rorden (2014) see John Ashburner and Ged Ridgway's reorient.m 
 % http://opensource.org/licenses/BSD-2-Clause
 %Examples
-%  nii_reslice_target('T1_LM1001.nii','','jhu.nii',false);
+%  nii_reslice_target('T1_LM1001.nii','','jhu.nii',0);
 % Next example shows how to use this without writing to disk
 %  inhdr = spm_vol('T1_LM1001.nii'); %load header
 %  inimg = spm_read_vols(inhdr); %load volume
@@ -38,6 +38,7 @@ end
 if ~exist('interp','var')
     interp = 1;%linear
 end
+if ~isnumeric(interp), interp = interp + 0; end; %change false/true to 0/1
 if ~isstruct(tarhdr)
     tarhdr = spm_vol(tarhdr); %load target header
 end

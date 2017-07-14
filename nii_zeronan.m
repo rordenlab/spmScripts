@@ -25,6 +25,7 @@ for i=1:size(fnms,1)
         if numNan > 0
             hdr.fname = fullfile(pth, ['z' nm ext]);  
             img(isnan(img)) = 0;%max(img(:)); % use ~isfinite instead of isnan to replace +/-inf with zero
+            %img = - img;
             spm_write_vol(hdr,img);
         end
     end
