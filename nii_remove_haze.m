@@ -6,7 +6,7 @@ function fnm = nii_remove_haze(fnm)
 % nii_remove_haze('T1.nii')
 
 if ~exist('fnm','var')
-    fnm = spm_select(1,'image','Select image[s] for NaN removal');
+    fnm = spm_select(1,'image','Select image[s] for haze removal');
 end;
 hdr = spm_vol(fnm);
 img = spm_read_vols(hdr);
