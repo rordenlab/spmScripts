@@ -7,6 +7,7 @@ function nii_merge_dki (V)
 minVol = 3; %1 to merge all images, 3 to merge images with at least 3 volumes
 if nargin <1 %no files
  V = spm_select(inf,'^.*\.(gz|nii)$','Select DKI images to merge');
+ %V = spm_select(inf,'^.*\.(bvec)$','Select DKI images to merge');
 end;
 if ischar(V), V = cellstr(V); end;
 num = numel(V);
@@ -57,6 +58,14 @@ rotate3d
 function [hd,im, bve,bva] = loadSub(fnm)
 im = []; bve = []; bva = [];
 [p,n,x] = spm_fileparts(fnm);
+if (strcmpi(x,'.bvec')) || (strcmpi(x,'.bval'))
+    fnm = fullfile(p,[n,'.nii']);
+    if ~exist(fnm,'file')
+        fnm = fullfile(p,[n,'.nii.gz']);
+    end
+    [p,n,x] = spm_fileparts(fnm);
+end;
+
 if (length(x)==3)  && min((x=='.gz')==1) 
     fnm = char(gunzip(fnm));
     delnam = fnm;
