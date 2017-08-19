@@ -1,5 +1,5 @@
 function nii_dtibatch (dtiBvecNames, isEddyCorrect)
-%test all possible vectors and polarities
+%quick processing of DTI - uses faster eddy_correct rather than eddy/topup
 %assumes angulations have been correctly adjusted
 % dtiNii: name of bvec file(s), e.g. img.bvec
 % isEddyCorrect : if true simple undistortion applied, if false than quick and dirty
@@ -20,7 +20,7 @@ if ~exist('isEddyCorrect','var') %file not specified
 end;
 fsldir= '/usr/local/fsl';
 if ~exist(fsldir,'dir')
-    error('Unable to find %s', fsldir); 
+    error('Unable to find %s', fsldir);
 end
 for i=1:size(dtiBvecNames,1)
     dtiBvec = deblank(dtiBvecNames(i,:)); %positive image
@@ -33,7 +33,7 @@ for i=1:size(dtiBvecNames,1)
     refVol = refVolSub(dtiBvec);
     %next: permute all possible b-vector alternatives
     dtiSub(fsldir,imgNam,dtiBvec,refVol, isEddyCorrect);
-    tracktionSub(dtiBvec);    
+    %tracktionSub(dtiBvec);
 end
 viewSub(fsldir,dtiBvec) %display results
 %end main loop.... subroutines follow
@@ -42,16 +42,16 @@ function tracktionSub(dtiBvec)
 if strcmpi(computer, 'GLNXA64')
     exeNam = 'tracktionLX'
 else
-   exeNam = 'tracktion'; 
+   exeNam = 'tracktion';
 end
 exeNam = fullfile(fileparts(which(mfilename)), exeNam);
 p = fileparts(exeNam);
 if isempty(p)
-   exeNam = fullfile(pwd, exeNam); 
+   exeNam = fullfile(pwd, exeNam);
 end
 if ~exist(exeNam,'file')
    fprintf('Skipped tractography: unable to find %s\n', exeNam);
-   return; 
+   return;
 end
 command=sprintf('%s "%s"\n',exeNam, dtiBvec);
 system(command);
@@ -130,6 +130,13 @@ faNam = fullfile(pth, [nam '_FA.nii.gz']); %Eddy corrected data
 v1Nam = fullfile(pth, [nam '_V1.nii.gz']); %Eddy corrected data
 setenv('FSLDIR', fsldir);
 setenv('PATH', [getenv('PATH') ':/usr/local/fsl/bin'])
-command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; ${FSLDIR}/bin/fslview %s %s &"\n',faNam,v1Nam);
+exenam = fullfile(fsldir, 'bin', 'fslview_deprecated');
+if ~exist(exenam)
+    exenam = fullfile(fsldir, 'bin', 'fslview');
+end
+if ~exist(exenam)
+   error('Unable to find fslview - update script to use fsleyes');
+end
+command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; %s %s %s &"\n',exenam, faNam,v1Nam);
 system(command);
 %end dtiSub
