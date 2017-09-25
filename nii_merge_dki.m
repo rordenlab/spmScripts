@@ -1,8 +1,9 @@
-function nii_merge_dki (V)
+function nii_merge_dki (V, isGui, isRev)
 %merge a series of DTI/DKI images for analysis
 %  V: image(s) to merge
+%  isRev: (optional) 
 % Examples
-%   nii_merge_dki('brain.nii.gz');
+%   nii_merge_dki({'dti.nii', 'dti2.nii'}));
 
 minVol = 3; %1 to merge all images, 3 to merge images with at least 3 volumes
 if nargin <1 %no files
@@ -34,7 +35,11 @@ end
 if size(img,4) <= nvol, error('Unable to load more than one image'); end;
 hdrOut = hdr(1);
 [p,n,x] = spm_fileparts(hdrOut.fname);
-n = ['DTI_', int2str(size(img,4)),'_', n]; 
+prefix = 'DTI_';
+if exist('isRev','var') && isRev
+    prefix = 'DTIrev_';
+end
+n = [prefix, int2str(size(img,4)),'_', n]; 
 hdrOut.fname = fullfile(p,[ n, x]);
 for vol=1:size(img,4)
     hdrOut.n(1)=vol;
@@ -43,6 +48,7 @@ end;
 if abs(max(bvec(:))) == 0, return; end;
 dlmwrite(fullfile(p,[ n, '.bval']), bval','delimiter','\t');
 dlmwrite(fullfile(p,[n, '.bvec']), bvec','delimiter','\t');
+if ~exist('isGui','var') || ~isGui, return; end;
 plotBvecSub(fullfile(p,[n, '.bvec']));
 %end nii_merge_dki()
 

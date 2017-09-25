@@ -33,7 +33,6 @@ for i=1:size(fnms,1)
     %    error('%s requires images to have an even number of rows and columns (not %d %d)\n',mfilename, hdr(1).dim(1), hdr(1).dim(2));
     %end 
     img = spm_read_vols(hdr);
-
     hdrOut = hdr(1);
     hdrOut.dim(1) = round(hdr(1).dim(1)*scale(1));
     hdrOut.dim(2) = round(hdr(1).dim(2)*scale(2));
