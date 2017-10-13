@@ -35,8 +35,10 @@ if ((skipVol == 0) & (nVol == nV)), fprintf('%s quitting: image only has %d volu
 fprintf('%s has volumes %d..%d volumes from %s\n',cropName4D,skipVol+1,skipVol+nVol,imgName4D); 
 hdr = hdr(1);
 hdr.fname   = cropName4D;
+nslices = hdr.dim(3);
+hdr.dim(3) = nslices;
 for vol=1:nVol
     hdr.n(1)=vol;
-    imgMod = img(:, :, :, skipVol+vol);
+    imgMod = img(:, :, (1:nslices), skipVol+vol);
     spm_write_vol(hdr,imgMod(:, :, :, 1));
 end;

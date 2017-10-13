@@ -47,7 +47,20 @@ for i=1:size(fnms,1)
         hdrOut.dim(1), hdrOut.dim(2), hdrOut.dim(3) );
     for vol=1:size(img,4)
         hdrOut.n(1)=vol;
-        imgOut  = resizeSub(img(:, :, :, vol), hdrOut.dim(1:3),'*cubic');
+        if exist('imresize3','file')
+            %see https://nbviewer.jupyter.org/urls/dl.dropbox.com/s/s0nw827nc4kcnaa/Aliasing.ipynb
+            %downsample with anti-aliasing filter  https://en.wikipedia.org/wiki/Image_scaling
+            if min(scale) < 1
+                imgOut = imresize3(img,hdrOut.dim(1:3),'Antialiasing',true);
+            else
+                imgOut = imresize3(img,hdrOut.dim(1:3));
+            end
+        else
+            if min(scale) < 1
+                warning('imresize3 not found: downsampled image may have aliasing');
+            end
+            imgOut  = resizeSub(img(:, :, :, vol), hdrOut.dim(1:3),'*cubic');
+        end;
         spm_write_vol(hdrOut, imgOut);
     end;
 end
