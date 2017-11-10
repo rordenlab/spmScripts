@@ -65,7 +65,7 @@ else %if reslicing is required
     outimg = zeros(outhdr.dim(1:3));
     for i = 1:imgdim(3)
         M = inv(spm_matrix([0 0 -i])*inv(outhdr.mat)*inhdr.mat);
-        outimg(:,:,i) = spm_slice_vol(inimg, M, imgdim(1:2), interp); % (linear interp)
+        outimg(:,:,i) = spm_slice_vol(inimg, M, imgdim(1:2), interp); % (1=linear interp)
     end
 end
 if nargout < 2

@@ -19,6 +19,9 @@ if ~exist('scale','var')
 	answer = inputdlg('Scaling factor ("0.5"=half size, "2 2 1"=double in plane)' ,'Settings',1,{'2'});
 	scale=str2num(answer{1}); %#ok<ST2NM>
 end
+if ~exist('imresize3','file') && (min(scale(:)) < 1)
+    fprintf('warning: imresize3 not found, downsampled image may have aliasing\n');
+end
 if numel(scale) < 3
 	if numel(scale) < 2
 		scale(2) = scale(1);
@@ -56,9 +59,6 @@ for i=1:size(fnms,1)
                 imgOut = imresize3(img,hdrOut.dim(1:3));
             end
         else
-            if min(scale) < 1
-                warning('imresize3 not found: downsampled image may have aliasing');
-            end
             imgOut  = resizeSub(img(:, :, :, vol), hdrOut.dim(1:3),'*cubic');
         end;
         spm_write_vol(hdrOut, imgOut);
