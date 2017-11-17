@@ -63,6 +63,13 @@ bNam = fullfile(pth, [ nam '.bval'] ); %Eddy corrected data
 if ~exist(bNam, 'file'), error('Unable to find file %s',bNam); end;
 b = textread(bNam);
 ref = find(b==0, 1, 'first');
+if isempty(ref)
+    m = min(b);
+    if m < 11 %some systems report b=~5 for the "b=0" volumes
+        ref = find(b==m, 1, 'first');
+    end
+
+end;
 if isempty(ref), error('No b-zero volume in file %s', bNam); end;
 ref = ref - 1;%fsl indexes volumes from 0
 %end refVolSub()
