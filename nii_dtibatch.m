@@ -16,7 +16,7 @@ if ~exist('dtiBvecNames','var') %file not specified
    dtiBvecNames = strcat(Apth,char(A));
 end;
 if ~exist('isEddyCorrect','var') %file not specified
-   isEddyCorrect = true;
+   isEddyCorrect = false;
 end;
 fsldir= '/usr/local/fsl';
 if ~exist(fsldir,'dir')
@@ -110,6 +110,7 @@ bNam = fullfile(pth, [ nam '.bval'] ); %Eddy corrected data
 maskNam = betSub(fsldir,imgNam, refVol);
 if ~exist(maskNam, 'file'), error('BET failed to create %s', maskNam); end;
 if isEddyCorrect
+    error('x');
     eccNam = eddySub(fsldir,imgNam,refVol);
 else
     eccNam = imgNam;

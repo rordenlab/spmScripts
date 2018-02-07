@@ -29,6 +29,8 @@ for i = 1: numel(parlines)
     if vol > mxVol, mxVol = vol; end;
     numSlice = numSlice + 1;
 end
+mxSlice
+mxVol
 %check that we can restore this image
 if numSlice == (mxVol * mxSlice), error('Volumes divisible by slices: no need to fix'); end;
 if ((mxVol-1) * mxSlice) > numSlice, error('PAR file borked in unknown manner'); end;

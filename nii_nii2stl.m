@@ -17,7 +17,7 @@ end;
 if ~exist('sthresh','var'), sthresh = 0.15; end; 
 if isempty(which('spm')), error('Install SPM12'); end;
 if isempty(which('nii_reslice_target')), error('Put nii_reslice_target.m in your Matlab path'); end;
-if false
+if true
     %1 get approximately aligned to template
     coregEstTemplateSub(fnm);
     %2 crop so we have a rough bounding box
