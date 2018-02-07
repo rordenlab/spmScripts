@@ -1,10 +1,9 @@
 function nii_flipap (V)
 % Generates anterior-posterior mirrored image (flip on Y dimension)
-%   nii_mirror('C:\dir\img.nii');
-% You can also pass multiple images - each will be mirrored
+%  V : image(s) to flip
 % Examples
-%  nii_flipap(strvcat('C:\dir\p1.nii','C:\dir\p2.nii')); %scans from participant 1 and 2
 %  nii_flipap('mri.nii');
+%  nii_flipap(strvcat('C:\dir\p1.nii','C:\dir\p2.nii')); %scans from participant 1 and 2
 
 if nargin <1 %no files specified
  V = spm_select(inf,'image','Select image to left-right flip');
