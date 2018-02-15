@@ -1,4 +1,4 @@
-function AtlasStatMap(template, outname, indices, intensities);
+function maxRegion = AtlasStatMap(template, outname, indices, intensities);
 %Create a MZ3 file where each region has specified intensity
 % template : name of indexed mz3 file
 % outname : name of created image
@@ -14,8 +14,15 @@ if size(c,2) ~= 5
    error('%s is not a template (it should have RGB and Scalar values\n', template);
 end
 cIndex = c(:,5);
-if max(cIndex(:)) < max(indices(:))
-    error('%s only has %d regions\n', max(cIndex(:)) );
+maxRegion = max(cIndex(:));
+if nargin < 2
+    return; %report maxRegion
+end
+if isempty(indices)
+   indices = [1:maxRegion]; 
+end
+if maxRegion < max(indices(:))
+    error('%s only has %d regions\n', template, maxRegion );
 end
 cOut = zeros(size(v,1),1);%output color
 cOut(:) = NaN;
