@@ -1,4 +1,4 @@
-function [outhdr, outimg] = nii_reslice_target(inhdr, inimg, tarhdr, interp) 
+function [outhdr, outimg] = nii_reslice_target_thresh(inhdr, inimg, tarhdr, interp) 
 %Reslice input image to match dimensions of target image (either to disk or memory)
 %  inhdr: image to reslice- either filename of NIfTI header or loaded NIfTI header structure
 %  inimg: (optonal) NIfTI image data (only if inhdr is a structure)
@@ -21,23 +21,27 @@ function [outhdr, outimg] = nii_reslice_target(inhdr, inimg, tarhdr, interp)
 %  nii_reslice_target_thresh('qCBV.nii','',tarhdr);
 
 if ~exist('inhdr','var')
-    inhdr = spm_select(1,'image','Select source image that will be resliced');
+    inhdr = spm_select(inf,'^.*\.(gz|img|nii)$','Select source image that will be resliced');
+    %inhdr = spm_select(1,'image','Select source image that will be resliced');
 end
 if ~exist('tarhdr','var')
-    tarhdr = spm_select(1,'image','Select target image (source will be resliced to match target)');
+    inhdr = spm_select(inf,'^.*\.(gz|img|nii)$','Select target image (source will be resliced to match target)');
+    %tarhdr = spm_select(1,'image','Select target image (source will be resliced to match target)');
 end
 if ~exist('interp','var')
     interp = 1;%linear
 end
 if ~isnumeric(interp), interp = interp + 0; end; %change false/true to 0/1
 if ~isstruct(tarhdr)
-    tarhdr = spm_vol(tarhdr); %load target header
+    %tarhdr = spm_vol(tarhdr); %load target header
+    [tarhdr, ~] = loadImgSub (tarhdr);
+    tarhdr = tarhdr(1);
+    
 end
 imgdim = tarhdr.dim(1:3);
 if ~isstruct(inhdr)
-    inhdr = spm_vol(inhdr); %load input header
+    [inhdr, inimg] = loadImgSub (inhdr);
     inhdr = inhdr(1); %if 4D, only process first volume
-	inimg = spm_read_vols(inhdr); %load input image
 end
 if size(inimg,4) > 1
     inhdr = inhdr(1);
@@ -85,17 +89,17 @@ else %if reslicing is required
         outslice = spm_slice_vol(inimg, M, imgdim(1:2), interp); % (1=linear interp)
         maskslice = spm_slice_vol(mask, M, imgdim(1:2), interp); % (1=linear interp)
         %if false
-            maskslice = double(maskslice >= 0.5);
-            outslice(maskslice == 0) = nan;
-            maskslice = maskslice * thresh;
-            if thresh > 0
-                outslice = max(maskslice, outslice);
-            else
-                outslice = min(maskslice, outslice);
-            end
+        %    maskslice = double(maskslice >= 0.5);
+        %    outslice(maskslice == 0) = nan;
+        %    maskslice = maskslice * thresh;
+        %    if thresh > 0
+        %        outslice = max(maskslice, outslice);
+        %    else
+        %        outslice = min(maskslice, outslice);
+        %    end
         %else
-        %    maskslice(maskslice < 0.5) = NaN; %without this, things get dilated
-        %    outslice = outslice ./ maskslice;
+            maskslice(maskslice < 0.5) = NaN; %without this, things get dilated
+            outslice = outslice ./ maskslice;
         %end
         outimg(:,:,i) = outslice;
     end
@@ -104,4 +108,37 @@ if nargout < 2
     outhdr = spm_create_vol(outhdr); %save header to disk
     spm_write_vol(outhdr,outimg); %save image to disk
 end
-%end nii_reslice_target()
+%end nii_reslice_target_thresh()
+
+function [hdr, img] = loadImgSub (fnm)
+unm = unGzSub (fnm); %convert FSL .nii.gz to .nii
+hdr = spm_vol(unm); %load header data
+for i = 1: numel(hdr) %ignore 4D realignment .mat file that would provide different rotation to each image
+    hdr(i).mat = hdr(1).mat;
+end
+img = spm_read_vols(hdr); %load image data
+hdr = hdr(1);
+%if input was nii.gz, remove .nii (otherwise FSL complains)
+if strcmpi(fnm,unm), return; end;
+for i = 1: size(unm,1)
+   delete(unm(i,:));
+end
+%end deleteUnGzSub
+
+function unfnm = unGzSub (fnm)
+unfnm = [];
+for i = 1: size(fnm,1)
+    unfnm = [unfnm; uGzSub(fnm(i,:))]; %#ok<AGROW>
+end
+%end unGzSub
+
+function fnm = uGzSub (fnm)
+[pth,nam,ext] = spm_fileparts(fnm);
+if strcmpi(ext,'.gz') %.nii.gz
+    fnm = char(gunzip(fnm));  
+elseif strcmpi(ext,'.voi') %.voi -> 
+    onam = char(gunzip(fnm));
+    fnm = fullfile(pth, [nam '.nii']);
+    movefile(onam,fnm);
+end;  
+%end uGzSub()
