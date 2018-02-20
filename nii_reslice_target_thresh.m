@@ -1,11 +1,12 @@
-function [outhdr, outimg] = nii_reslice_target_thresh(inhdr, inimg, tarhdr, interp) 
+function [outhdr, outimg] = nii_reslice_target_thresh(inhdr, inimg, tarhdr, interp, thresh)
 %Reslice input image to match dimensions of target image (either to disk or memory)
 %  inhdr: image to reslice- either filename of NIfTI header or loaded NIfTI header structure
 %  inimg: (optonal) NIfTI image data (only if inhdr is a structure)
 %  tarhdr: image to match- either filename of NIfTI header or loaded NIfTI header structure
 %  interp: (optional) if 0 nearest neighbor interpolation, else trilinear interpolation (default)
+%  thresh: (optional) threshold to apply to data, e.g. if "5" then only voxels > 5 survive
 % Outputs: if not specified, resliced image saved to disk, else returns resliced header and image
-%Chris Rorden (2014) see John Ashburner and Ged Ridgway's reorient.m 
+%Chris Rorden (2014) see John Ashburner and Ged Ridgway's reorient.m
 % http://opensource.org/licenses/BSD-2-Clause
 %Examples
 %   nii_reslice_target_thresh('spmT_5.nii', '','mni152_2009_256.nii')
@@ -19,6 +20,8 @@ function [outhdr, outimg] = nii_reslice_target_thresh(inhdr, inimg, tarhdr, inte
 %  tarhdr.mat = [-1 0 0 79; 0 1 0 -113; 0 0 1 -51; 0 0 0 1];
 %  tarhdr.dim = [157 189 136];
 %  nii_reslice_target_thresh('qCBV.nii','',tarhdr);
+%  nii_reslice_target_thresh('spmT.nii','','mni152_2009bet.nii'); %assume spmT is thresholded
+%  nii_reslice_target_thresh('spmT.nii','','mni152_2009bet.nii',1, 5); %threshold at t>5
 
 if ~exist('inhdr','var')
     inhdr = spm_select(inf,'^.*\.(gz|img|nii)$','Select source image that will be resliced');
@@ -36,7 +39,7 @@ if ~isstruct(tarhdr)
     %tarhdr = spm_vol(tarhdr); %load target header
     [tarhdr, ~] = loadImgSub (tarhdr);
     tarhdr = tarhdr(1);
-    
+
 end
 imgdim = tarhdr.dim(1:3);
 if ~isstruct(inhdr)
@@ -48,6 +51,13 @@ if size(inimg,4) > 1
     inimg = inimg(:,:,:,1);
     fprintf('%s warning: only reslicing first volume of 4D image %s\n', mfilename, inhdr.fname);
 end
+if exist('thresh','var')
+   if thresh > 0
+       inimg(inimg < thresh) = NaN;
+   else
+       inimg(inimg > thresh) = NaN;
+   end
+end
 mask = (inimg == 0) + (isnan(inimg));
 isMasked = sum(mask(:)) > 0;
 if isMasked
@@ -56,21 +66,21 @@ if isMasked
         warning('Masking has no influence on nearest neighbor interpolation');
     end
 else
-    warning('Image does not appear thresholded');
+    warning('Image does not appear thresholded (hint: provide "thresh" value to this function)');
 end;
 negThresh = max(inimg(inimg(:) < 0));
 posThresh = min(inimg(inimg(:) > 0));
-if ~isempty(negThresh) && ~isempty(posThresh) 
-   error('Not simple threshold: image has both posiitve and negative values.'); 
+if ~isempty(negThresh) && ~isempty(posThresh)
+   error('Not simple threshold: image has both posiitve and negative values.');
 end
 if isempty(negThresh)
     thresh = posThresh;
 else
-   thresh = negThresh; 
+   thresh = negThresh;
 end
 fprintf('Threshold %g\n',thresh);
 if interp > 1
-   error('Not designed for higher-order interpolation'); 
+   error('Not designed for higher-order interpolation');
 end
 mask = 1 - mask;
 inimg(isnan(inimg)) = 0; % convert nan to zero - crucial or major contamination
@@ -135,10 +145,10 @@ end
 function fnm = uGzSub (fnm)
 [pth,nam,ext] = spm_fileparts(fnm);
 if strcmpi(ext,'.gz') %.nii.gz
-    fnm = char(gunzip(fnm));  
-elseif strcmpi(ext,'.voi') %.voi -> 
+    fnm = char(gunzip(fnm));
+elseif strcmpi(ext,'.voi') %.voi ->
     onam = char(gunzip(fnm));
     fnm = fullfile(pth, [nam '.nii']);
     movefile(onam,fnm);
-end;  
+end;
 %end uGzSub()
