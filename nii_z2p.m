@@ -8,6 +8,7 @@ function nii_z2p(fnms)
 if ~exist('fnms','var')
 	fnms = spm_select(inf,'image','Select image[s] for NaN removal'); 
 end
+fprintf('Warning: assuming inputs are z-scores, not appropriate for t-scores or other maps.\n');
 for i=1:size(fnms,1)
     fnm = deblank(fnms(i,:));
     hdr = spm_vol(fnm);
