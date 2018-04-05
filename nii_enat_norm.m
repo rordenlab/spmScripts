@@ -12,7 +12,8 @@ function nii_enat_norm(T1,lesion,T2, UseXTemplate, vox, bb, DeleteIntermediateIm
 % nii_norm12 %use graphical interface
 
 %STEP 0: check inputs
-isSPM12orNewerSub;spm fmri
+isSPM12orNewerSub;
+if isempty(spm_figure('FindWin','Graphics')), spm fmri; end; %launch SPM if it is not running
 T1param = exist('T1','var'); %did the user provide a T1 scan
 if ~T1param, T1 = spm_select(1,'image','Select T1 images'); end;
 if isempty(T1), return; end;

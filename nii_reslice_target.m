@@ -45,31 +45,38 @@ end
 imgdim = tarhdr.dim(1:3);
 if ~isstruct(inhdr)
     inhdr = spm_vol(inhdr); %load input header
-    inhdr = inhdr(1); %if 4D, only process first volume
+    %if numel(inhdr) > 1
+    %    fprintf('%s warning: only reslicing first volume of 4D image %s\n', mfilename, inhdr(1).fname);
+    %end
+    %inhdr = inhdr(1); %if 4D, only process first volume
 	inimg = spm_read_vols(inhdr); %load input image
 end
-if size(inimg,4) > 1
-    inhdr = inhdr(1);
-    inimg = inimg(:,:,:,1);
-    fprintf('%s warning: only reslicing first volume of 4D image %s\n', mfilename, inhdr.fname);
-end
+nvol = size(inimg,4);
+inhdr = inhdr(1);
 outhdr            = inhdr;
 [pth,nam,ext] = fileparts(outhdr.fname);
 outhdr.fname      = fullfile(pth,['r' nam ext]);
 outhdr.dim(1:3)   = imgdim(1:3);
+%outhdr.dim(4) = nvol;
 outhdr.mat        = tarhdr.mat;
 if isequal(inhdr.mat, outhdr.mat) && isequal(outhdr.dim(1:3), inhdr.dim(1:3))
     fprintf('%s no need to reslice: input image already aligned to target image\n', mfilename);
     outimg = inimg;
 else %if reslicing is required
-    outimg = zeros(outhdr.dim(1:3));
-    for i = 1:imgdim(3)
-        M = inv(spm_matrix([0 0 -i])*inv(outhdr.mat)*inhdr.mat);
-        outimg(:,:,i) = spm_slice_vol(inimg, M, imgdim(1:2), interp); % (1=linear interp)
+    outimg = zeros([outhdr.dim(1:3), nvol]);
+    for vol = 1:nvol 
+        for i = 1:imgdim(3)
+            M = inv(spm_matrix([0 0 -i])*inv(outhdr.mat)*inhdr.mat);
+            outimg(:,:,i,vol) = spm_slice_vol(inimg(:,:,:,vol), M, imgdim(1:2), interp); % (linear interp)
+        end
     end
 end
 if nargout < 2
-    outhdr = spm_create_vol(outhdr); %save header to disk
-    spm_write_vol(outhdr,outimg); %save image to disk
+    for vol=1:nvol
+        outhdr.n(1)=vol;
+        spm_write_vol(outhdr,outimg(:, :, :, vol));
+    end;
+    %outhdr = spm_create_vol(outhdr); %save header to disk
+    %spm_write_vol(outhdr,outimg); %save image to disk
 end
 %end nii_reslice_target()
