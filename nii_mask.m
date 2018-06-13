@@ -13,7 +13,7 @@ function nii_mask(imgNames, maskName, thresh, val)
 if nargin<1, imgNames = spm_select(Inf,'image','Select images for masking'); end
 if nargin<2, maskName = spm_select(1,'image','Select mask'); end
 if nargin<3, thresh = 0.025; end
-if nargin<4, val = 0; end
+%if nargin<4, val = 0; end
 hdrM = spm_vol(maskName);
 if numel(hdrM) > 1 
     error('Error: mask has multiple volumes, please explicitly specify masking volume, e.g. ''~/tpm.nii,1'' ');
@@ -27,7 +27,11 @@ for j=1:size(imgNames,1)
   end;
   img = spm_read_vols(hdr);
   clipped = sum(imgM(:) < thresh);
-  img(imgM < thresh) = val;
+  if nargin<4, val = min(img(:)); end
+  imgM(img > val) = 0;
+  %img(imgM < thresh) = val;
+  img(imgM > thresh) = val;
+  
   [pth,nm,xt, ~] = spm_fileparts(hdr.fname);
   hdr.fname = fullfile(pth, ['m' nm xt]);  
   img(isnan(img)) = 0; % use ~isfinite instead of isnan to replace +/-inf with zero
