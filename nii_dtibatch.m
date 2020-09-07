@@ -127,7 +127,7 @@ delete(fullfile(pth, [nam '_L1.nii.gz']));
 delete(fullfile(pth, [nam '_L2.nii.gz']));
 delete(fullfile(pth, [nam '_L3.nii.gz']));
 delete(fullfile(pth, [nam '_MO.nii.gz']));
-delete(fullfile(pth, [nam '_MD.nii.gz']));
+%delete(fullfile(pth, [nam '_MD.nii.gz']));
 delete(fullfile(pth, [nam '_S0.nii.gz']));
 %end dtiSub
 
@@ -138,7 +138,11 @@ faNam = fullfile(pth, [nam '_FA.nii.gz']); %Eddy corrected data
 v1Nam = fullfile(pth, [nam '_V1.nii.gz']); %Eddy corrected data
 setenv('FSLDIR', fsldir);
 setenv('PATH', [getenv('PATH') ':/usr/local/fsl/bin'])
-exenam = fullfile(fsldir, 'bin', 'fslview_deprecated');
+exenam = fullfile(fsldir, 'bin', 'fsleyes');
+%>fsleyes tosh_DTI_ortho_20191203103319_7006_FA.nii.gz tosh_DTI_ortho_20191203103319_7006_V1.nii.gz
+if ~exist(exenam)
+    exenam = fullfile(fsldir, 'bin', 'fslview_deprecated');
+end
 if ~exist(exenam)
     exenam = fullfile(fsldir, 'bin', 'fslview');
 end
@@ -146,5 +150,6 @@ if ~exist(exenam)
    error('Unable to find fslview - update script to use fsleyes');
 end
 command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; %s %s %s &"\n',exenam, faNam,v1Nam);
-system(command);
+%system(command);
+fprintf(command);
 %end dtiSub

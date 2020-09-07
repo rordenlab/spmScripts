@@ -1,5 +1,5 @@
-function nii_zeronan(fnms)
-%Voxels with NaN's are replaced with zero, output has 'z' prefix
+function nii_nanzero(fnms)
+%Voxels with zeros are replaced with NaN's, output has 'z' prefix
 % fnms : file name[s] of image[s] (optional)
 %Notes
 % For slower (2D) implementation see http://blogs.warwick.ac.uk/nichols/entry/zero_nans_in/
@@ -19,12 +19,12 @@ for i=1:size(fnms,1)
         fprintf('%s designed for 3D images with only a single volume\n',mfilename);
     else
     	[pth nm ext] = spm_fileparts(fnm);
-        numNan = sum(isnan(img(:)));
+        numNan = sum(img(:)== 0);
         %img(img > 800) = 800; %example clipping extreme values
-        fprintf('%s has %d voxels with not-a-number (NaN) intensities\n', nm, numNan);
-        if numNan > 0v
+        fprintf('%s has %d voxels with zero value converted to not-a-number (NaN)\n', nm, numNan);
+        if numNan > 0
             hdr.fname = fullfile(pth, ['z' nm ext]);  
-            img(isnan(img)) = 0;%max(img(:)); % use ~isfinite instead of isnan to replace +/-inf with zero
+            img(img == 0) = NaN;%max(img(:)); % use ~isfinite instead of isnan to replace +/-inf with zero
             %img = - img;
             spm_write_vol(hdr,img);
         end

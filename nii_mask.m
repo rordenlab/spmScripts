@@ -17,25 +17,32 @@ if nargin<3, thresh = 0.025; end
 hdrM = spm_vol(maskName);
 if numel(hdrM) > 1 
     error('Error: mask has multiple volumes, please explicitly specify masking volume, e.g. ''~/tpm.nii,1'' ');
-end;
+end
 imgM = spm_read_vols(hdrM);
-for j=1:size(imgNames,1)  
-  hdr = spm_vol(deblank(imgNames(j,:)));
-  if hdr.dim ~= hdrM.dim
+for j=1:size(imgNames,1) 
+  fnm = deblank(imgNames(j,:));
+  hdr = spm_vol(fnm);
+  nvol = numel(hdr);
+  if hdr(1).dim ~= hdrM.dim
     disp('mask and source must have same dimensions!');
     break; 
-  end;
-  img = spm_read_vols(hdr);
-  clipped = sum(imgM(:) < thresh);
-  if nargin<4, val = min(img(:)); end
-  imgM(img > val) = 0;
-  %img(imgM < thresh) = val;
-  img(imgM > thresh) = val;
-  
+  end
+  img4d = spm_read_vols(hdr);
+  hdr = hdr(1);
   [pth,nm,xt, ~] = spm_fileparts(hdr.fname);
   hdr.fname = fullfile(pth, ['m' nm xt]);  
-  img(isnan(img)) = 0; % use ~isfinite instead of isnan to replace +/-inf with zero
-  spm_write_vol(hdr,img);
-  fprintf('Image %s had %d voxels set to %f because they were < %f in %s\n',hdr.fname, clipped, val, thresh, hdrM.fname); 
+  
+  if nargin<4, val = min(img4d(:)); end 
+  clipped = sum(imgM(:) < thresh);
+  for vol=1:nvol
+    hdr.n(1)=vol;
+    img = img4d(:,:,:,vol);
+    img(imgM < thresh) = val;
+    img(isnan(img)) = val; % use ~isfinite instead of isnan to replace +/-inf with zero
+    spm_write_vol(hdr,img);
+    spm_write_vol(hdr,img);
+   end;
+  fprintf('Image %s had %d voxels per volume set to %f because they were < %f in %s\n',hdr.fname, clipped, val, thresh, hdrM.fname); 
 end
 %end nii_mask()
+

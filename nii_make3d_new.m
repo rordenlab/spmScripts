@@ -1,7 +1,10 @@
-function nii_make3d_new
+function nii_make3d_new(sz)
 %Make a NIfTI image using SPM
 
-dim = [128, 128, 128, 1]; %image resolution in columns, rows, slices, volumes
+if ~exist('sz', 'var')
+    sz = 128;
+end
+dim = [sz, sz, sz, 1]; %image resolution in columns, rows, slices, volumes
 dtype = 32; %precision of data
 ofile    = 'test.nii';%spm_file(parfile,'path',opts.outdir,'ext',opts.ext);
 scale = 1;

@@ -12,6 +12,7 @@ function nii_threshreslicecluster(srcNam, tarNam, thresh, clusterMM3, binarize)
 %For usage example see
 % https://f1000research.com/articles/4-466/v1
 isGz = 1; %1 to convert .nii -> .nii.gz, else output uncompressed
+isSaveTemp = true; %save resliced image before filter
 if ~exist('clusterMM3','var'), clusterMM3 = 32; end;
 if ~exist('binarize','var'), binarize = false; end;
 if ~exist('srcNam','var')
@@ -56,7 +57,15 @@ if thresh > 0
 else
     outimg(outimg(:) > thresh) = 0;
 end
-fprintf('%s has %d voxels that exceed %g \n', outhdr.fname,sum(outimg(:)~= 0), thresh);
+if isSaveTemp
+    outimg(isnan(outimg)) = 0;
+    outhdr.fname      = fullfile(pth,['temp' nam ext]);
+    outhdr = spm_create_vol(outhdr); %save header to disk
+    spm_write_vol(outhdr,outimg); %save image to disk
+    outhdr.fname      = fullfile(pth,['r' nam ext]);
+end
+%use >0 not ~=0 so NaNs are not detected
+fprintf('%s has %d voxels that exceed %g \n', outhdr.fname,sum(outimg(:)> 0), thresh);
 %cluster threshold
 if clusterMM3 > 0
     outmm3=prod(abs(outhdr.mat(1:3, 1:3)*[1;1;1]));
@@ -91,7 +100,7 @@ if sum(outimg(:)~= 0) < 1
 end
 %write filtered image to disk
 outhdr = spm_create_vol(outhdr); %save header to disk
-spm_write_vol(outhdr,outimg); %save image to diks
+spm_write_vol(outhdr,outimg); %save image to disk
 if (isGz) && (strcmpi(ext,'.nii')) % compress .nii files, but not .hdr files
     gzip(outhdr.fname);
     delete(outhdr.fname);

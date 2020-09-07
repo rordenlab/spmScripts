@@ -55,7 +55,9 @@ else
     fprintf('Saving %s as real-numbers (floating point) with %d-bits per voxel\n',hdr.fname, spm_type(hdr.dt,'bits'));
     hdr.pinfo = [1;0;0]; 
 end
-img(2) = -inf;
+%img(2) = -inf;
+%img(4) = inf;
+%img(6) = NaN;
 for v=1:nV
     hdr.n(1)=v;
     spm_write_vol(hdr,img(:, :, :, v));
