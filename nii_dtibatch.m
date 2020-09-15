@@ -90,6 +90,7 @@ end
 command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; ${FSLDIR}/bin/bet %s %s -f 0.3 -g 0 -n -m"\n',inNam,maskNam);
 maskNam = fullfile(pth, [nam '_mask.nii.gz']); %will generate image "dti_mask.nii.gz"
 system(command);
+fprintf(command);
 %end betSub()
 
 function eccNam = eddySub(fsldir,imgNam,refVol) %eddy current correct and brain extract
@@ -121,6 +122,7 @@ setenv('FSLDIR', fsldir);
 setenv('PATH', [getenv('PATH') ':/usr/local/fsl/bin'])
 command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; ${FSLDIR}/bin/dtifit --data=%s --out=%s --mask=%s --bvecs=%s --bvals=%s"\n',eccNam, outNam, maskNam,vNam,bNam);
 system(command);
+fprintf(command);
 delete(fullfile(pth, [nam '_V2.nii.gz']));
 delete(fullfile(pth, [nam '_V3.nii.gz']));
 delete(fullfile(pth, [nam '_L1.nii.gz']));
