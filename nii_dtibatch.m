@@ -120,7 +120,7 @@ end
 outNam = fullfile(pth, nam); %Eddy corrected data
 setenv('FSLDIR', fsldir);
 setenv('PATH', [getenv('PATH') ':/usr/local/fsl/bin'])
-command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; ${FSLDIR}/bin/dtifit --data=%s --out=%s --mask=%s --bvecs=%s --bvals=%s"\n',eccNam, outNam, maskNam,vNam,bNam);
+command=sprintf('sh -c ". ${FSLDIR}/etc/fslconf/fsl.sh; ${FSLDIR}/bin/dtifit --save_tensor --data=%s --out=%s --mask=%s --bvecs=%s --bvals=%s"\n',eccNam, outNam, maskNam,vNam,bNam);
 system(command);
 fprintf(command);
 delete(fullfile(pth, [nam '_V2.nii.gz']));
